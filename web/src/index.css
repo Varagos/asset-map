@@ -1,0 +1,121 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@theme {
+  --color-surface: #fbf8fa;
+  --color-surface-dim: #dcd9db;
+  --color-surface-bright: #fbf8fa;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f5f3f4;
+  --color-surface-container: #f0edef;
+  --color-surface-container-high: #eae7e9;
+  --color-surface-container-highest: #e4e2e3;
+  --color-on-surface: #1b1b1d;
+  --color-on-surface-variant: #45474c;
+  --color-inverse-surface: #303032;
+  --color-inverse-on-surface: #f3f0f2;
+  --color-outline: #75777d;
+  --color-outline-variant: #c5c6cd;
+  --color-surface-tint: #545f73;
+  --color-primary: #091426;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #1e293b;
+  --color-on-primary-container: #8590a6;
+  --color-inverse-primary: #bcc7de;
+  --color-secondary: #565e74;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #dae2fd;
+  --color-on-secondary-container: #5c647a;
+  --color-tertiary: #1e1200;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #35260c;
+  --color-on-tertiary-container: #a38c6a;
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+  --color-primary-fixed: #d8e3fb;
+  --color-primary-fixed-dim: #bcc7de;
+  --color-on-primary-fixed: #111c2d;
+  --color-on-primary-fixed-variant: #3c475a;
+  --color-secondary-fixed: #dae2fd;
+  --color-secondary-fixed-dim: #bec6e0;
+  --color-on-secondary-fixed: #131b2e;
+  --color-on-secondary-fixed-variant: #3f465c;
+  --color-tertiary-fixed: #fadfb8;
+  --color-tertiary-fixed-dim: #ddc39d;
+  --color-on-tertiary-fixed: #271902;
+  --color-on-tertiary-fixed-variant: #564427;
+  --color-background: #fbf8fa;
+  --color-on-background: #1b1b1d;
+  --color-surface-variant: #e4e2e3;
+
+  --font-display-lg: Inter, system-ui, sans-serif;
+  --font-headline-md: Inter, system-ui, sans-serif;
+  --font-headline-sm: Inter, system-ui, sans-serif;
+  --font-body-lg: Inter, system-ui, sans-serif;
+  --font-body-md: Inter, system-ui, sans-serif;
+  --font-body-sm: Inter, system-ui, sans-serif;
+  --font-label-md: Inter, system-ui, sans-serif;
+  --font-code-sm: "JetBrains Mono", ui-monospace, monospace;
+
+  --spacing-unit: 4px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-gutter: 16px;
+  --spacing-margin: 24px;
+  --spacing-sidebar-width: 280px;
+  --spacing-drawer-width: 400px;
+
+  --radius-sm: 0.25rem;
+  --radius-default: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+}
+
+:root {
+  font-family: Inter, system-ui, sans-serif;
+  color: var(--color-on-surface);
+  background: var(--color-background);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.asset-marker {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border: 2px solid #ffffff;
+  border-radius: 9999px;
+  box-shadow: 0 2px 8px rgb(15 23 42 / 25%);
+}
+
+.asset-marker-selected {
+  width: 24px;
+  height: 24px;
+  border-width: 3px;
+}
