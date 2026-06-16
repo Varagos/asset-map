@@ -9,7 +9,11 @@ export function isAssetInsideBBox(asset: Asset, bbox: BBox): boolean {
   )
 }
 
-export function areBBoxesEqual(left: BBox | null, right: BBox | null): boolean {
+export function areBBoxesEqual(
+  left: BBox | null,
+  right: BBox | null,
+  epsilon = 0.000001,
+): boolean {
   if (left === right) {
     return true
   }
@@ -19,9 +23,9 @@ export function areBBoxesEqual(left: BBox | null, right: BBox | null): boolean {
   }
 
   return (
-    left.minLng === right.minLng &&
-    left.minLat === right.minLat &&
-    left.maxLng === right.maxLng &&
-    left.maxLat === right.maxLat
+    Math.abs(left.minLng - right.minLng) < epsilon &&
+    Math.abs(left.minLat - right.minLat) < epsilon &&
+    Math.abs(left.maxLng - right.maxLng) < epsilon &&
+    Math.abs(left.maxLat - right.maxLat) < epsilon
   )
 }

@@ -1,9 +1,10 @@
 import { useCallback, useMemo } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../app/hooks'
 import {
-  refreshMapBounds,
+  applyAreaFilter,
+  clearAreaFilter,
+  markMapBoundsChanged,
   selectAsset,
-  setCommittedMapBounds,
   setDraftMapBounds,
 } from '../state/assetUiSlice'
 import { AssetMapView } from './AssetMapView'
@@ -11,13 +12,18 @@ import type { Asset, BBox } from '../model/asset.types'
 
 type AssetMapProps = {
   assets: Asset[]
+  isAreaFilterActive: boolean
   selectedAssetId: string | null
 }
 
-export function AssetMap({ assets, selectedAssetId }: AssetMapProps) {
+export function AssetMap({
+  assets,
+  isAreaFilterActive,
+  selectedAssetId,
+}: AssetMapProps) {
   const dispatch = useAppDispatch()
-  const { hasUnappliedMapBoundsChange, limitToVisibleMapArea } = useAppSelector(
-    (state) => state.assetUi,
+  const hasUnappliedMapBoundsChange = useAppSelector(
+    (state) => state.assetUi.hasUnappliedMapBoundsChange,
   )
 
   const center = useMemo<[number, number]>(() => {
@@ -25,18 +31,21 @@ export function AssetMap({ assets, selectedAssetId }: AssetMapProps) {
 
     return firstAsset ? [firstAsset.lat, firstAsset.lng] : [42.3601, -71.0589]
   }, [assets])
-  const handleCommitMapBounds = useCallback(
-    (bbox: BBox) => dispatch(setCommittedMapBounds(bbox)),
-    [dispatch],
-  )
-  const handleRefreshResults = useCallback(() => {
-    dispatch(refreshMapBounds())
-  }, [dispatch])
   const handleSelectAsset = useCallback(
     (assetId: string) => dispatch(selectAsset(assetId)),
     [dispatch],
   )
-  const handleUpdateDraftMapBounds = useCallback(
+  const handleApplyAreaFilter = useCallback(() => {
+    dispatch(applyAreaFilter())
+  }, [dispatch])
+  const handleClearAreaFilter = useCallback(() => {
+    dispatch(clearAreaFilter())
+  }, [dispatch])
+  const handleMapBoundsChanged = useCallback(
+    (bbox: BBox) => dispatch(markMapBoundsChanged(bbox)),
+    [dispatch],
+  )
+  const handleMapBoundsSynced = useCallback(
     (bbox: BBox) => dispatch(setDraftMapBounds(bbox)),
     [dispatch],
   )
@@ -46,12 +55,14 @@ export function AssetMap({ assets, selectedAssetId }: AssetMapProps) {
       assets={assets}
       center={center}
       hasUnappliedMapBoundsChange={hasUnappliedMapBoundsChange}
-      isLimitedToVisibleMapArea={limitToVisibleMapArea}
-      onCommitMapBounds={handleCommitMapBounds}
-      onRefreshResults={handleRefreshResults}
+      isAreaFilterActive={isAreaFilterActive}
+      onApplyAreaFilter={handleApplyAreaFilter}
+      onClearAreaFilter={handleClearAreaFilter}
+      onMapBoundsChanged={handleMapBoundsChanged}
+      onMapBoundsSynced={handleMapBoundsSynced}
       onSelectAsset={handleSelectAsset}
-      onUpdateDraftMapBounds={handleUpdateDraftMapBounds}
       selectedAssetId={selectedAssetId}
+      shouldFitAssets={!isAreaFilterActive}
     />
   )
 }

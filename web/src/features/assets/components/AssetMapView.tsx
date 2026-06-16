@@ -1,10 +1,11 @@
-import { useEffect } from 'react'
-import { divIcon, type LatLngBounds } from 'leaflet'
+import { useEffect, useMemo, useRef } from 'react'
+import { divIcon, latLngBounds, type LatLngBounds } from 'leaflet'
 import {
   MapContainer,
   Marker,
   TileLayer,
   Tooltip,
+  useMap,
   useMapEvents,
 } from 'react-leaflet'
 import { Button } from '../../../shared/components/Button'
@@ -14,30 +15,20 @@ type AssetMapViewProps = {
   assets: Asset[]
   center: [number, number]
   hasUnappliedMapBoundsChange: boolean
-  isLimitedToVisibleMapArea: boolean
-  onCommitMapBounds: (bbox: BBox) => void
-  onRefreshResults: () => void
+  isAreaFilterActive: boolean
+  onApplyAreaFilter: () => void
+  onClearAreaFilter: () => void
+  onMapBoundsChanged: (bbox: BBox) => void
+  onMapBoundsSynced: (bbox: BBox) => void
   onSelectAsset: (assetId: string) => void
-  onUpdateDraftMapBounds: (bbox: BBox) => void
   selectedAssetId: string | null
+  shouldFitAssets: boolean
 }
 
 const markerColors: Record<AssetStatus, string> = {
   ok: '#10b981',
   warning: '#f59e0b',
   critical: '#ef4444',
-}
-
-function boundsToBBox(bounds: LatLngBounds): BBox {
-  const northEast = bounds.getNorthEast()
-  const southWest = bounds.getSouthWest()
-
-  return {
-    minLng: southWest.lng,
-    minLat: southWest.lat,
-    maxLng: northEast.lng,
-    maxLat: northEast.lat,
-  }
 }
 
 function createMarkerIcon(status: AssetStatus, isSelected: boolean) {
@@ -49,25 +40,103 @@ function createMarkerIcon(status: AssetStatus, isSelected: boolean) {
   })
 }
 
-function MapBoundsReporter({
-  onCommitMapBounds,
-  onUpdateDraftMapBounds,
+function mapBoundsToBBox(bounds: LatLngBounds): BBox {
+  const northEast = bounds.getNorthEast()
+  const southWest = bounds.getSouthWest()
+
+  return {
+    minLng: southWest.lng,
+    minLat: southWest.lat,
+    maxLng: northEast.lng,
+    maxLat: northEast.lat,
+  }
+}
+
+function createAssetsBounds(assets: readonly Asset[]) {
+  if (assets.length === 0) {
+    return null
+  }
+
+  return latLngBounds(assets.map((asset) => [asset.lat, asset.lng]))
+}
+
+function MapController({
+  assets,
+  assetsBoundsKey,
+  onMapBoundsChanged,
+  onMapBoundsSynced,
+  shouldFitAssets,
 }: Pick<
   AssetMapViewProps,
-  'onCommitMapBounds' | 'onUpdateDraftMapBounds'
->) {
-  const map = useMapEvents({
+  'assets' | 'onMapBoundsChanged' | 'onMapBoundsSynced' | 'shouldFitAssets'
+> & {
+  assetsBoundsKey: string
+}) {
+  const map = useMap()
+  const lastFitKeyRef = useRef<string | null>(null)
+  const ignoreMoveUntilRef = useRef(0)
+
+  function reportInteractiveBoundsChange() {
+    const bbox = mapBoundsToBBox(map.getBounds())
+
+    if (Date.now() < ignoreMoveUntilRef.current) {
+      onMapBoundsSynced(bbox)
+      return
+    }
+
+    onMapBoundsChanged(bbox)
+  }
+
+  useMapEvents({
+    dragend: reportInteractiveBoundsChange,
     moveend() {
-      onUpdateDraftMapBounds(boundsToBBox(map.getBounds()))
+      const bbox = mapBoundsToBBox(map.getBounds())
+
+      if (Date.now() < ignoreMoveUntilRef.current) {
+        onMapBoundsSynced(bbox)
+        return
+      }
+
+      onMapBoundsChanged(bbox)
     },
-    zoomend() {
-      onUpdateDraftMapBounds(boundsToBBox(map.getBounds()))
-    },
+    zoomend: reportInteractiveBoundsChange,
   })
 
   useEffect(() => {
-    onCommitMapBounds(boundsToBBox(map.getBounds()))
-  }, [map, onCommitMapBounds])
+    onMapBoundsSynced(mapBoundsToBBox(map.getBounds()))
+  }, [map, onMapBoundsSynced])
+
+  useEffect(() => {
+    if (!shouldFitAssets || assets.length === 0) {
+      return
+    }
+
+    if (lastFitKeyRef.current === assetsBoundsKey) {
+      return
+    }
+
+    const bounds = createAssetsBounds(assets)
+
+    if (!bounds) {
+      return
+    }
+
+    lastFitKeyRef.current = assetsBoundsKey
+    ignoreMoveUntilRef.current = Date.now() + 500
+
+    if (bounds.getNorthEast().equals(bounds.getSouthWest())) {
+      map.setView(bounds.getCenter(), 13, {
+        animate: false,
+      })
+      return
+    }
+
+    map.fitBounds(bounds, {
+      animate: false,
+      maxZoom: 13,
+      padding: [32, 32],
+    })
+  }, [assets, assetsBoundsKey, map, shouldFitAssets])
 
   return null
 }
@@ -76,13 +145,23 @@ export function AssetMapView({
   assets,
   center,
   hasUnappliedMapBoundsChange,
-  isLimitedToVisibleMapArea,
-  onCommitMapBounds,
-  onRefreshResults,
+  isAreaFilterActive,
+  onApplyAreaFilter,
+  onClearAreaFilter,
+  onMapBoundsChanged,
+  onMapBoundsSynced,
   onSelectAsset,
-  onUpdateDraftMapBounds,
   selectedAssetId,
+  shouldFitAssets,
 }: AssetMapViewProps) {
+  const assetsBoundsKey = useMemo(
+    () =>
+      assets
+        .map((asset) => `${asset.id}:${asset.lat}:${asset.lng}`)
+        .join('|'),
+    [assets],
+  )
+
   return (
     <section className="relative min-h-[420px] flex-1 overflow-hidden bg-surface-container">
       <MapContainer
@@ -95,9 +174,12 @@ export function AssetMapView({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <MapBoundsReporter
-          onCommitMapBounds={onCommitMapBounds}
-          onUpdateDraftMapBounds={onUpdateDraftMapBounds}
+        <MapController
+          assets={assets}
+          assetsBoundsKey={assetsBoundsKey}
+          onMapBoundsChanged={onMapBoundsChanged}
+          onMapBoundsSynced={onMapBoundsSynced}
+          shouldFitAssets={shouldFitAssets}
         />
         {assets.map((asset) => {
           const isSelected = asset.id === selectedAssetId
@@ -117,12 +199,17 @@ export function AssetMapView({
         })}
       </MapContainer>
 
-      {isLimitedToVisibleMapArea && hasUnappliedMapBoundsChange ? (
-        <div className="absolute left-4 top-4 z-[500] flex items-center gap-2 rounded-md border border-outline-variant bg-surface-container-lowest px-3 py-2 shadow">
-          <span className="text-sm font-medium text-on-surface">
-            Map area changed.
-          </span>
-          <Button onClick={onRefreshResults}>Refresh results</Button>
+      {hasUnappliedMapBoundsChange ? (
+        <div className="absolute left-4 top-4 z-[500] rounded-md border border-outline-variant bg-surface-container-lowest p-2 shadow">
+          <Button onClick={onApplyAreaFilter} variant="primary">
+            Search this area
+          </Button>
+        </div>
+      ) : null}
+
+      {isAreaFilterActive ? (
+        <div className="absolute left-4 top-20 z-[500] rounded-md border border-outline-variant bg-surface-container-lowest p-2 shadow">
+          <Button onClick={onClearAreaFilter}>Clear area filter</Button>
         </div>
       ) : null}
 

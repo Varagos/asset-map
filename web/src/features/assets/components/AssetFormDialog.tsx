@@ -1,7 +1,7 @@
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { skipToken } from '@reduxjs/toolkit/query'
-import { useForm, type SubmitHandler } from 'react-hook-form'
+import { useForm, useWatch, type SubmitHandler } from 'react-hook-form'
 import { useAppDispatch, useAppSelector } from '../../../app/hooks'
 import {
   useCreateAssetMutation,
@@ -43,14 +43,24 @@ export function AssetFormDialog() {
   const [updateAsset, updateState] = useUpdateAssetMutation()
 
   const {
+    control,
     formState: { errors },
     handleSubmit,
     register,
     reset,
+    setValue,
   } = useForm<AssetFormInput, unknown, AssetFormValues>({
     defaultValues,
     resolver: zodResolver(assetFormSchema),
   })
+  const watchedLat = useWatch({ control, name: 'lat' })
+  const watchedLng = useWatch({ control, name: 'lng' })
+  const lat = Number.isFinite(Number(watchedLat))
+    ? Number(watchedLat)
+    : Number(defaultValues.lat)
+  const lng = Number.isFinite(Number(watchedLng))
+    ? Number(watchedLng)
+    : Number(defaultValues.lng)
 
   useEffect(() => {
     if (!isOpen) {
@@ -88,15 +98,52 @@ export function AssetFormDialog() {
 
     dispatch(closeForm())
   }
+  const handleLocationPickerClick = useCallback(
+    (xRatio: number, yRatio: number) => {
+      const nextLat = 90 - yRatio * 180
+      const nextLng = xRatio * 360 - 180
+
+      setValue('lat', Number(nextLat.toFixed(6)), {
+        shouldDirty: true,
+        shouldValidate: true,
+      })
+      setValue('lng', Number(nextLng.toFixed(6)), {
+        shouldDirty: true,
+        shouldValidate: true,
+      })
+    },
+    [setValue],
+  )
+  const handleUseCurrentLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition((position) => {
+      setValue('lat', Number(position.coords.latitude.toFixed(6)), {
+        shouldDirty: true,
+        shouldValidate: true,
+      })
+      setValue('lng', Number(position.coords.longitude.toFixed(6)), {
+        shouldDirty: true,
+        shouldValidate: true,
+      })
+    })
+  }, [setValue])
 
   return (
     <AssetFormDialogView
+      assetName={editingAsset?.name}
       errors={errors}
       isEditMode={isEditMode}
       isOpen={isOpen}
       isSaving={isSaving}
+      lat={lat}
+      lng={lng}
       onCancel={() => dispatch(closeForm())}
+      onLocationPickerClick={handleLocationPickerClick}
       onSubmit={handleSubmit(onSubmit)}
+      onUseCurrentLocation={handleUseCurrentLocation}
       register={register}
     />
   )

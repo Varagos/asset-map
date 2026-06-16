@@ -3,6 +3,7 @@ export const ASSET_STATUSES = ['ok', 'warning', 'critical'] as const
 
 export type AssetType = (typeof ASSET_TYPES)[number]
 export type AssetStatus = (typeof ASSET_STATUSES)[number]
+export type AssetListSort = 'status' | 'name'
 
 export type Asset = {
   id: string
@@ -24,7 +25,6 @@ export type BBox = {
 }
 
 export type GetAssetsQuery = {
-  search?: string
   type?: AssetType
   status?: AssetStatus
   bbox?: BBox

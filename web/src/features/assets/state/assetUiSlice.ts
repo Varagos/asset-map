@@ -6,35 +6,36 @@ import {
 import { areBBoxesEqual } from '../../../shared/utils/bbox'
 import type {
   AssetStatus,
+  AssetListSort,
   AssetType,
   BBox,
   GetAssetsQuery,
 } from '../model/asset.types'
 
 export type AssetUiState = {
-  search: string
   type: AssetType | 'all'
   status: AssetStatus | 'all'
+  listPage: number
+  listSort: AssetListSort
   selectedAssetId: string | null
   formMode: 'create' | 'edit' | null
   editingAssetId: string | null
   deletingAssetId: string | null
-  limitToVisibleMapArea: boolean
-  committedMapBounds: BBox | null
+  committedAreaBounds: BBox | null
   draftMapBounds: BBox | null
   hasUnappliedMapBoundsChange: boolean
 }
 
 const initialState: AssetUiState = {
-  search: '',
   type: 'all',
   status: 'all',
+  listPage: 1,
+  listSort: 'status',
   selectedAssetId: null,
   formMode: null,
   editingAssetId: null,
   deletingAssetId: null,
-  limitToVisibleMapArea: false,
-  committedMapBounds: null,
+  committedAreaBounds: null,
   draftMapBounds: null,
   hasUnappliedMapBoundsChange: false,
 }
@@ -43,14 +44,20 @@ export const assetUiSlice = createSlice({
   name: 'assetUi',
   initialState,
   reducers: {
-    setSearch(state, action: PayloadAction<string>) {
-      state.search = action.payload
-    },
     setType(state, action: PayloadAction<AssetType | 'all'>) {
       state.type = action.payload
+      state.listPage = 1
     },
     setStatus(state, action: PayloadAction<AssetStatus | 'all'>) {
       state.status = action.payload
+      state.listPage = 1
+    },
+    setListPage(state, action: PayloadAction<number>) {
+      state.listPage = Math.max(1, action.payload)
+    },
+    setListSort(state, action: PayloadAction<AssetListSort>) {
+      state.listSort = action.payload
+      state.listPage = 1
     },
     selectAsset(state, action: PayloadAction<string | null>) {
       state.selectedAssetId = action.payload
@@ -73,55 +80,44 @@ export const assetUiSlice = createSlice({
     closeDeleteDialog(state) {
       state.deletingAssetId = null
     },
-    setLimitToVisibleMapArea(state, action: PayloadAction<boolean>) {
-      state.limitToVisibleMapArea = action.payload
-
-      if (!action.payload) {
-        state.hasUnappliedMapBoundsChange = false
-        return
-      }
-
-      if (!state.committedMapBounds && state.draftMapBounds) {
-        state.committedMapBounds = state.draftMapBounds
-      }
-    },
     setDraftMapBounds(state, action: PayloadAction<BBox>) {
       state.draftMapBounds = action.payload
-
-      if (
-        state.limitToVisibleMapArea &&
-        !areBBoxesEqual(state.committedMapBounds, action.payload)
-      ) {
-        state.hasUnappliedMapBoundsChange = true
-      }
     },
-    refreshMapBounds(state) {
-      if (state.draftMapBounds) {
-        state.committedMapBounds = state.draftMapBounds
-      }
-
-      state.hasUnappliedMapBoundsChange = false
-    },
-    setCommittedMapBounds(state, action: PayloadAction<BBox>) {
-      state.committedMapBounds = action.payload
+    markMapBoundsChanged(state, action: PayloadAction<BBox>) {
       state.draftMapBounds = action.payload
+      state.hasUnappliedMapBoundsChange = !areBBoxesEqual(
+        state.committedAreaBounds,
+        action.payload,
+      )
+    },
+    applyAreaFilter(state) {
+      if (state.draftMapBounds) {
+        state.committedAreaBounds = state.draftMapBounds
+        state.hasUnappliedMapBoundsChange = false
+        state.listPage = 1
+      }
+    },
+    clearAreaFilter(state) {
+      state.committedAreaBounds = null
       state.hasUnappliedMapBoundsChange = false
+      state.listPage = 1
     },
   },
 })
 
 export const {
+  applyAreaFilter,
+  clearAreaFilter,
   closeDeleteDialog,
   closeForm,
+  markMapBoundsChanged,
   openCreateForm,
   openDeleteDialog,
   openEditForm,
-  refreshMapBounds,
   selectAsset,
-  setCommittedMapBounds,
   setDraftMapBounds,
-  setLimitToVisibleMapArea,
-  setSearch,
+  setListPage,
+  setListSort,
   setStatus,
   setType,
 } = assetUiSlice.actions
@@ -133,12 +129,8 @@ const selectAssetUi = (state: { assetUi: AssetUiState }) => state.assetUi
 export const selectAssetsQuery = createSelector(
   [selectAssetUi],
   (assetUi): GetAssetsQuery => ({
-    search: assetUi.search || undefined,
     type: assetUi.type === 'all' ? undefined : assetUi.type,
     status: assetUi.status === 'all' ? undefined : assetUi.status,
-    bbox:
-      assetUi.limitToVisibleMapArea && assetUi.committedMapBounds
-        ? assetUi.committedMapBounds
-        : undefined,
+    bbox: assetUi.committedAreaBounds ?? undefined,
   }),
 )

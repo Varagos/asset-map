@@ -45,10 +45,6 @@ describe('filterAssets', () => {
     ])
   })
 
-  it('filters assets by search text', () => {
-    expect(filterAssets(assets, { search: 'north' })).toEqual([assets[0]])
-  })
-
   it('filters assets by bbox', () => {
     expect(
       filterAssets(assets, {
