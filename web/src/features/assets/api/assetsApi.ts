@@ -1,51 +1,68 @@
 import {
   createApi,
-  fakeBaseQuery,
+  fetchBaseQuery,
 } from '@reduxjs/toolkit/query/react'
-import { cloneMockAssets, filterAssets } from './mockAssets'
 import type {
   Asset,
   CreateAssetInput,
   GetAssetsQuery,
+  GetAssetsResponse,
   UpdateAssetInput,
 } from '../model/asset.types'
 
-type MockApiError = {
-  status: number
-  message: string
-}
+function toSearchParams(query: GetAssetsQuery = {}) {
+  const params = new URLSearchParams()
 
-let assets = cloneMockAssets()
-
-function createAssetId(): string {
-  if (typeof globalThis.crypto?.randomUUID === 'function') {
-    return globalThis.crypto.randomUUID()
+  if (query.type) {
+    params.set('type', query.type)
   }
 
-  return `asset-${Date.now()}-${Math.random().toString(36).slice(2)}`
-}
-
-function notFound(id: string): MockApiError {
-  return {
-    status: 404,
-    message: `Asset ${id} was not found`,
+  if (query.status) {
+    params.set('status', query.status)
   }
+
+  if (query.limit !== undefined) {
+    params.set('limit', String(query.limit))
+  }
+
+  if (query.offset !== undefined) {
+    params.set('offset', String(query.offset))
+  }
+
+  if (query.sort) {
+    params.set('sort', query.sort)
+  }
+
+  if (query.bbox) {
+    params.set('minLng', String(query.bbox.minLng))
+    params.set('minLat', String(query.bbox.minLat))
+    params.set('maxLng', String(query.bbox.maxLng))
+    params.set('maxLat', String(query.bbox.maxLat))
+  }
+
+  return params
 }
 
 export const assetsApi = createApi({
   reducerPath: 'assetsApi',
-  baseQuery: fakeBaseQuery<MockApiError>(),
+  baseQuery: fetchBaseQuery({
+    baseUrl: import.meta.env.VITE_API_BASE_URL ?? '/api/v1',
+  }),
   tagTypes: ['Asset'],
   endpoints: (builder) => ({
-    getAssets: builder.query<Asset[], GetAssetsQuery | void>({
-      queryFn: (query) => ({
-        data: filterAssets(assets, query ?? {}),
-      }),
+    getAssets: builder.query<GetAssetsResponse, GetAssetsQuery | void>({
+      query: (query) => {
+        const params = toSearchParams(query ?? {})
+
+        return {
+          url: `assets${params.size > 0 ? `?${params.toString()}` : ''}`,
+        }
+      },
       providesTags: (result) =>
         result
           ? [
               { type: 'Asset', id: 'LIST' },
-              ...result.map((asset) => ({
+              ...result.items.map((asset) => ({
                 type: 'Asset' as const,
                 id: asset.id,
               })),
@@ -53,61 +70,33 @@ export const assetsApi = createApi({
           : [{ type: 'Asset', id: 'LIST' }],
     }),
     getAssetById: builder.query<Asset, string>({
-      queryFn: (id) => {
-        const asset = assets.find((item) => item.id === id)
-
-        return asset ? { data: asset } : { error: notFound(id) }
-      },
+      query: (id) => `assets/${id}`,
       providesTags: (_result, _error, id) => [{ type: 'Asset', id }],
     }),
     createAsset: builder.mutation<Asset, CreateAssetInput>({
-      queryFn: (input) => {
-        const asset = {
-          ...input,
-          id: createAssetId(),
-        }
-
-        assets = [asset, ...assets]
-
-        return { data: asset }
-      },
+      query: (input) => ({
+        url: 'assets',
+        method: 'POST',
+        body: input,
+      }),
       invalidatesTags: [{ type: 'Asset', id: 'LIST' }],
     }),
     updateAsset: builder.mutation<Asset, UpdateAssetInput>({
-      queryFn: ({ id, changes }) => {
-        const assetIndex = assets.findIndex((asset) => asset.id === id)
-
-        if (assetIndex === -1) {
-          return { error: notFound(id) }
-        }
-
-        const updatedAsset = {
-          ...assets[assetIndex],
-          ...changes,
-          id,
-        }
-
-        assets = assets.map((asset) => (asset.id === id ? updatedAsset : asset))
-
-        return { data: updatedAsset }
-      },
+      query: ({ id, changes }) => ({
+        url: `assets/${id}`,
+        method: 'PATCH',
+        body: changes,
+      }),
       invalidatesTags: (_result, _error, { id }) => [
         { type: 'Asset', id },
         { type: 'Asset', id: 'LIST' },
       ],
     }),
-    deleteAsset: builder.mutation<{ id: string }, string>({
-      queryFn: (id) => {
-        const assetExists = assets.some((asset) => asset.id === id)
-
-        if (!assetExists) {
-          return { error: notFound(id) }
-        }
-
-        assets = assets.filter((asset) => asset.id !== id)
-
-        return { data: { id } }
-      },
+    deleteAsset: builder.mutation<void, string>({
+      query: (id) => ({
+        url: `assets/${id}`,
+        method: 'DELETE',
+      }),
       invalidatesTags: (_result, _error, id) => [
         { type: 'Asset', id },
         { type: 'Asset', id: 'LIST' },

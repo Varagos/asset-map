@@ -14,27 +14,10 @@ import { AssetFilters } from './AssetFilters'
 import { AssetFormDialog } from './AssetFormDialog'
 import { AssetMap } from './AssetMap'
 import { DeleteAssetDialog } from './DeleteAssetDialog'
-import type { Asset, AssetStatus } from '../model/asset.types'
+import type { GetAssetsQuery } from '../model/asset.types'
 
 const LIST_PAGE_SIZE = 50
-
-const statusRank: Record<AssetStatus, number> = {
-  critical: 0,
-  warning: 1,
-  ok: 2,
-}
-
-function sortAssets(assets: readonly Asset[], sort: 'status' | 'name'): Asset[] {
-  return [...assets].sort((left, right) => {
-    if (sort === 'name') {
-      return left.name.localeCompare(right.name)
-    }
-
-    const statusComparison = statusRank[left.status] - statusRank[right.status]
-
-    return statusComparison || left.name.localeCompare(right.name)
-  })
-}
+const MAP_ASSET_LIMIT = 5000
 
 export function AssetDashboard() {
   const dispatch = useAppDispatch()
@@ -42,18 +25,41 @@ export function AssetDashboard() {
   const { committedAreaBounds, listPage, listSort, selectedAssetId } = useAppSelector(
     (state) => state.assetUi,
   )
-  const { data: assets = [], isLoading } = useGetAssetsQuery(query)
-  const { data: allAssets = [] } = useGetAssetsQuery()
-  const sortedAssets = useMemo(
-    () => sortAssets(assets, listSort),
-    [assets, listSort],
+  const listQuery = useMemo<GetAssetsQuery>(
+    () => ({
+      ...query,
+      limit: LIST_PAGE_SIZE,
+      offset: (listPage - 1) * LIST_PAGE_SIZE,
+      sort: listSort,
+    }),
+    [listPage, listSort, query],
   )
-  const totalPages = Math.max(1, Math.ceil(sortedAssets.length / LIST_PAGE_SIZE))
+  const mapQuery = useMemo<GetAssetsQuery>(
+    () => ({
+      ...query,
+      limit: MAP_ASSET_LIMIT,
+      offset: 0,
+      sort: 'status',
+    }),
+    [query],
+  )
+  const allAssetsQuery = useMemo<GetAssetsQuery>(
+    () => ({
+      limit: MAP_ASSET_LIMIT,
+      offset: 0,
+      sort: 'status',
+    }),
+    [],
+  )
+  const { data: listResult, isLoading } = useGetAssetsQuery(listQuery)
+  const { data: mapResult } = useGetAssetsQuery(mapQuery)
+  const { data: allAssetsResult } = useGetAssetsQuery(allAssetsQuery)
+  const assets = listResult?.items ?? []
+  const mapAssets = mapResult?.items ?? assets
+  const allAssets = allAssetsResult?.items ?? []
+  const totalFilteredAssets = listResult?.total ?? 0
+  const totalPages = Math.max(1, Math.ceil(totalFilteredAssets / LIST_PAGE_SIZE))
   const currentPage = Math.min(listPage, totalPages)
-  const paginatedAssets = sortedAssets.slice(
-    (currentPage - 1) * LIST_PAGE_SIZE,
-    currentPage * LIST_PAGE_SIZE,
-  )
 
   useEffect(() => {
     if (listPage > totalPages) {
@@ -71,7 +77,7 @@ export function AssetDashboard() {
 
   return (
     <AssetDashboardView
-      assets={paginatedAssets}
+      assets={assets}
       criticalCount={criticalCount}
       deleteDialog={<DeleteAssetDialog />}
       detailDrawer={<AssetDetailDrawer />}
@@ -81,7 +87,7 @@ export function AssetDashboard() {
       isLoading={isLoading}
       map={
         <AssetMap
-          assets={assets}
+          assets={mapAssets}
           isAreaFilterActive={Boolean(committedAreaBounds)}
           selectedAssetId={selectedAssetId}
         />
@@ -96,7 +102,7 @@ export function AssetDashboard() {
       selectedAssetId={selectedAssetId}
       sort={listSort}
       totalCount={allAssets.length}
-      totalFilteredAssets={sortedAssets.length}
+      totalFilteredAssets={totalFilteredAssets}
       totalPages={totalPages}
       warningCount={warningCount}
     />

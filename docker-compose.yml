@@ -1,0 +1,21 @@
+services:
+  postgis:
+    image: postgis/postgis:16-3.4
+    platform: linux/amd64
+    container_name: asset-map-postgis
+    environment:
+      POSTGRES_DB: asset_map
+      POSTGRES_USER: asset_map
+      POSTGRES_PASSWORD: asset_map
+    ports:
+      - '5433:5432'
+    volumes:
+      - asset-map-postgis-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U asset_map -d asset_map']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  asset-map-postgis-data:

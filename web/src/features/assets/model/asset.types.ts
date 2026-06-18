@@ -29,6 +29,15 @@ export type GetAssetsQuery = {
   status?: AssetStatus
   bbox?: BBox
   limit?: number
+  offset?: number
+  sort?: AssetListSort
+}
+
+export type GetAssetsResponse = {
+  items: Asset[]
+  total: number
+  limit: number
+  offset: number
 }
 
 export type CreateAssetInput = Omit<Asset, 'id'>
