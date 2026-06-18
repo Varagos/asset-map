@@ -41,6 +41,13 @@ export type GetAssetsResponse = {
   offset: number
 }
 
+export type AssetsSummary = {
+  total: number
+  ok: number
+  warning: number
+  critical: number
+}
+
 export type CreateAssetInput = Omit<Asset, 'id' | 'version'>
 
 export type UpdateAssetInput = {

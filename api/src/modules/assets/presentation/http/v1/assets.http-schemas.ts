@@ -19,6 +19,35 @@ const optionalDateString = z
   .union([validDateString, z.literal(''), z.null()])
   .transform((value) => (value ? value : null))
 
+function toDateOnlyTimestamp(value: string): number {
+  const date = new Date(value)
+
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+}
+
+function addDateOrderIssue(
+  value: {
+    installed_at?: string | undefined
+    last_inspected_at?: string | null | undefined
+  },
+  context: z.RefinementCtx,
+): void {
+  if (!value.installed_at || !value.last_inspected_at) {
+    return
+  }
+
+  if (
+    toDateOnlyTimestamp(value.last_inspected_at) <
+    toDateOnlyTimestamp(value.installed_at)
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'last_inspected_at cannot be before installed_at',
+      path: ['last_inspected_at'],
+    })
+  }
+}
+
 const coordinateQuerySchema = {
   minLng: z.coerce.number().finite().min(-180).max(180).optional(),
   minLat: z.coerce.number().finite().min(-90).max(90).optional(),
@@ -136,11 +165,12 @@ const assetBodyObjectSchema = z.object({
 })
 
 export const assetBodySchema: z.ZodType<CreateAssetInput> =
-  assetBodyObjectSchema
+  assetBodyObjectSchema.superRefine(addDateOrderIssue)
 
 export const updateAssetBodySchema: z.ZodType<UpdateAssetInput> =
   assetBodyObjectSchema
     .partial()
+    .superRefine(addDateOrderIssue)
     .refine((value) => Object.keys(value).length > 0, {
       message: 'Provide at least one asset field to update',
     })

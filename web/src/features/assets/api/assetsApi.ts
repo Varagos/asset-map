@@ -4,6 +4,7 @@ import {
 } from '@reduxjs/toolkit/query/react'
 import type {
   Asset,
+  AssetsSummary,
   CreateAssetInput,
   DeleteAssetInput,
   GetAssetsQuery,
@@ -78,13 +79,20 @@ export const assetsApi = createApi({
       query: (id) => `assets/${id}`,
       providesTags: (_result, _error, id) => [{ type: 'Asset', id }],
     }),
+    getAssetsSummary: builder.query<AssetsSummary, void>({
+      query: () => 'assets/summary',
+      providesTags: [{ type: 'Asset', id: 'SUMMARY' }],
+    }),
     createAsset: builder.mutation<Asset, CreateAssetInput>({
       query: (input) => ({
         url: 'assets',
         method: 'POST',
         body: input,
       }),
-      invalidatesTags: [{ type: 'Asset', id: 'LIST' }],
+      invalidatesTags: [
+        { type: 'Asset', id: 'LIST' },
+        { type: 'Asset', id: 'SUMMARY' },
+      ],
     }),
     updateAsset: builder.mutation<Asset, UpdateAssetInput>({
       query: ({ id, version, changes }) => ({
@@ -98,6 +106,7 @@ export const assetsApi = createApi({
       invalidatesTags: (_result, _error, { id }) => [
         { type: 'Asset', id },
         { type: 'Asset', id: 'LIST' },
+        { type: 'Asset', id: 'SUMMARY' },
       ],
     }),
     deleteAsset: builder.mutation<void, DeleteAssetInput>({
@@ -111,6 +120,7 @@ export const assetsApi = createApi({
       invalidatesTags: (_result, _error, { id }) => [
         { type: 'Asset', id },
         { type: 'Asset', id: 'LIST' },
+        { type: 'Asset', id: 'SUMMARY' },
       ],
     }),
   }),
@@ -121,5 +131,6 @@ export const {
   useDeleteAssetMutation,
   useGetAssetByIdQuery,
   useGetAssetsQuery,
+  useGetAssetsSummaryQuery,
   useUpdateAssetMutation,
 } = assetsApi

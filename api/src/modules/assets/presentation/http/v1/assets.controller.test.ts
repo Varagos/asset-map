@@ -57,6 +57,19 @@ describe('assets controller', () => {
     })
   })
 
+  it('returns the unfiltered assets summary', async () => {
+    const response = await request(createTestApp())
+      .get('/api/v1/assets/summary')
+      .expect(200)
+
+    expect(response.body).toEqual({
+      total: 2,
+      ok: 1,
+      warning: 0,
+      critical: 1,
+    })
+  })
+
   it('returns validation errors for invalid requests', async () => {
     const response = await request(createTestApp())
       .post('/api/v1/assets')

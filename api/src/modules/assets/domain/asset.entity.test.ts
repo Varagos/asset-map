@@ -40,6 +40,26 @@ describe('Asset', () => {
     expect(asset.toPrimitives().last_inspected_at).toBeNull()
   })
 
+  it('rejects last_inspected_at before installed_at', () => {
+    expect(() =>
+      Asset.reconstitute({
+        ...validAsset,
+        installed_at: '2025-01-10',
+        last_inspected_at: '2025-01-09',
+      }),
+    ).toThrow(InvalidAssetError)
+  })
+
+  it('accepts last_inspected_at on installed_at', () => {
+    const asset = Asset.reconstitute({
+      ...validAsset,
+      installed_at: '2025-01-10',
+      last_inspected_at: '2025-01-10',
+    })
+
+    expect(asset.toPrimitives().last_inspected_at).toBe('2025-01-10')
+  })
+
   it('updates through fine-grained domain methods', () => {
     const asset = Asset.reconstitute(validAsset)
 

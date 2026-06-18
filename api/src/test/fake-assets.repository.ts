@@ -1,5 +1,6 @@
 import type {
   AssetsRepository,
+  AssetsSummary,
   DeleteAssetOptions,
   ListAssetsCriteria,
   PaginatedAssets,
@@ -89,6 +90,28 @@ export class FakeAssetsRepository implements AssetsRepository {
       limit: criteria.limit,
       offset: criteria.offset,
     })
+  }
+
+  summary(): Promise<AssetsSummary> {
+    const summary = this.assets.reduce<AssetsSummary>(
+      (result, asset) => {
+        const { status } = asset.toPrimitives()
+
+        return {
+          ...result,
+          total: result.total + 1,
+          [status]: result[status] + 1,
+        }
+      },
+      {
+        total: 0,
+        ok: 0,
+        warning: 0,
+        critical: 0,
+      },
+    )
+
+    return Promise.resolve(summary)
   }
 
   findById(id: string): Promise<Asset | null> {

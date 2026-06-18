@@ -22,6 +22,13 @@ export type PaginatedAssets = {
   offset: number
 }
 
+export type AssetsSummary = {
+  total: number
+  ok: number
+  warning: number
+  critical: number
+}
+
 export type SaveAssetOptions = {
   expectedVersion?: number
 }
@@ -32,6 +39,7 @@ export type DeleteAssetOptions = {
 
 export interface AssetsRepository {
   list(criteria: ListAssetsCriteria): Promise<PaginatedAssets>
+  summary(): Promise<AssetsSummary>
   findById(id: string): Promise<Asset | null>
   save(asset: Asset, options?: SaveAssetOptions): Promise<Asset>
   deleteById(id: string, options?: DeleteAssetOptions): Promise<boolean>

@@ -5,6 +5,7 @@ import type { Point, Repository } from 'typeorm'
 import type {
   DeleteAssetOptions,
   AssetsRepository,
+  AssetsSummary,
   ListAssetsCriteria,
   PaginatedAssets,
   SaveAssetOptions,
@@ -83,6 +84,17 @@ function toDomain(row: AssetOrmEntity): Asset {
   return Asset.reconstitute(props)
 }
 
+type SummaryRow = {
+  total: string
+  ok: string
+  warning: string
+  critical: string
+}
+
+function countFromRaw(value: string | undefined): number {
+  return Number(value ?? 0)
+}
+
 export class TypeOrmAssetsRepository implements AssetsRepository {
   constructor(private readonly repository: Repository<AssetOrmEntity>) {}
 
@@ -136,6 +148,26 @@ export class TypeOrmAssetsRepository implements AssetsRepository {
       total,
       limit: criteria.limit,
       offset: criteria.offset,
+    }
+  }
+
+  async summary(): Promise<AssetsSummary> {
+    const row = await this.repository
+      .createQueryBuilder('asset')
+      .select('COUNT(*)', 'total')
+      .addSelect("COUNT(*) FILTER (WHERE asset.status = 'ok')", 'ok')
+      .addSelect("COUNT(*) FILTER (WHERE asset.status = 'warning')", 'warning')
+      .addSelect(
+        "COUNT(*) FILTER (WHERE asset.status = 'critical')",
+        'critical',
+      )
+      .getRawOne<SummaryRow>()
+
+    return {
+      total: countFromRaw(row?.total),
+      ok: countFromRaw(row?.ok),
+      warning: countFromRaw(row?.warning),
+      critical: countFromRaw(row?.critical),
     }
   }
 

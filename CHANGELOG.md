@@ -4,6 +4,11 @@ Compact notes on decisions and meaningful changes. Keep entries dated, short, an
 
 ## 2026-06-18
 
+- Added a compact technical decisions document and linked it from the README.
+- Replaced the fake create/edit location grid with a real Leaflet picker.
+- Polished the dashboard header stats, filter chips, sort control, and delete confirmation modal.
+- Added the asset date invariant: `last_inspected_at` must be empty/null or on/after `installed_at`.
+- Added an assets summary endpoint so header totals do not depend on an arbitrary high-limit list query.
 - Chose optimistic concurrency for asset writes instead of serializable transactions because stale browser edits are the main risk.
 - Added TypeORM `@VersionColumn` plus HTTP `ETag`/`If-Match`; version stays server metadata, not an editable form field.
 - Made PATCH and DELETE require `If-Match`; missing preconditions return `428`, stale versions return `412`.

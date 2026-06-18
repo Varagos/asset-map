@@ -16,6 +16,12 @@ function isValidDateString(value: string): boolean {
   return value.trim().length > 0 && !Number.isNaN(Date.parse(value))
 }
 
+function toDateOnlyTimestamp(value: string): number {
+  const date = new Date(value)
+
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+}
+
 function isFiniteNumber(value: number): boolean {
   return typeof value === 'number' && Number.isFinite(value)
 }
@@ -60,6 +66,16 @@ function validateAssetProps(props: AssetProps): void {
     !isValidDateString(props.last_inspected_at)
   ) {
     issues.push('last_inspected_at must be a valid date string or null')
+  }
+
+  if (
+    isValidDateString(props.installed_at) &&
+    props.last_inspected_at !== null &&
+    isValidDateString(props.last_inspected_at) &&
+    toDateOnlyTimestamp(props.last_inspected_at) <
+      toDateOnlyTimestamp(props.installed_at)
+  ) {
+    issues.push('last_inspected_at cannot be before installed_at')
   }
 
   if (typeof props.notes !== 'string') {

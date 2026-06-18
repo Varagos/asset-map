@@ -12,16 +12,39 @@ const validDateString = z.string().refine((value) => {
 
 const optionalDateString = z.union([validDateString, z.literal(''), z.null()])
 
-export const assetFormSchema = z.object({
-  name: z.string().trim().min(1, 'Name is required'),
-  type: z.enum(ASSET_TYPES),
-  status: z.enum(ASSET_STATUSES),
-  lat: z.coerce.number().min(-90).max(90),
-  lng: z.coerce.number().min(-180).max(180),
-  installed_at: validDateString,
-  last_inspected_at: optionalDateString,
-  notes: z.string(),
-})
+function toDateOnlyTimestamp(value: string): number {
+  const date = new Date(value)
+
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+}
+
+export const assetFormSchema = z
+  .object({
+    name: z.string().trim().min(1, 'Name is required'),
+    type: z.enum(ASSET_TYPES),
+    status: z.enum(ASSET_STATUSES),
+    lat: z.coerce.number().min(-90).max(90),
+    lng: z.coerce.number().min(-180).max(180),
+    installed_at: validDateString,
+    last_inspected_at: optionalDateString,
+    notes: z.string(),
+  })
+  .refine(
+    (value) => {
+      if (!value.last_inspected_at) {
+        return true
+      }
+
+      return (
+        toDateOnlyTimestamp(value.last_inspected_at) >=
+        toDateOnlyTimestamp(value.installed_at)
+      )
+    },
+    {
+      message: 'Last inspected cannot be before installed',
+      path: ['last_inspected_at'],
+    },
+  )
 
 export type AssetFormInput = z.input<typeof assetFormSchema>
 export type AssetFormValues = z.output<typeof assetFormSchema>

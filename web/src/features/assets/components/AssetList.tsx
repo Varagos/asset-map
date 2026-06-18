@@ -1,6 +1,8 @@
 import {
   Activity,
+  ArrowDownAZ,
   CalendarDays,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Circle,
@@ -103,19 +105,30 @@ export function AssetList({
         </div>
 
         <label className="flex items-center gap-xs">
-          <span className="text-[11px] font-semibold text-on-surface-variant">
-            Sort by:
+          <span className="sr-only">Sort by</span>
+          <span className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-outline-variant bg-surface-container-lowest px-2 shadow-sm">
+            <ArrowDownAZ
+              aria-hidden="true"
+              className="h-3.5 w-3.5 text-on-surface-variant"
+            />
+            <span className="relative">
+              <select
+                aria-label="Sort by"
+                className="min-h-7 appearance-none bg-transparent py-1 pl-0 pr-6 text-[12px] font-semibold text-on-surface focus:outline-none"
+                onChange={(event) =>
+                  onSortChange(event.target.value as AssetListSort)
+                }
+                value={sort}
+              >
+                <option value="status">Status first</option>
+                <option value="name">Name A-Z</option>
+              </select>
+              <ChevronDown
+                aria-hidden="true"
+                className="pointer-events-none absolute right-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-outline"
+              />
+            </span>
           </span>
-          <select
-            className="rounded border border-outline-variant bg-surface-container-lowest px-2 py-1 text-[12px] text-on-surface focus:border-primary focus:outline-none"
-            onChange={(event) =>
-              onSortChange(event.target.value as AssetListSort)
-            }
-            value={sort}
-          >
-            <option value="status">Status (Critical First)</option>
-            <option value="name">Name (A-Z)</option>
-          </select>
         </label>
       </div>
 

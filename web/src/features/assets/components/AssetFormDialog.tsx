@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { skipToken } from '@reduxjs/toolkit/query'
 import { useForm, useWatch, type SubmitHandler } from 'react-hook-form'
@@ -18,24 +18,48 @@ import {
   selectAsset,
 } from '../state/assetUiSlice'
 import { AssetFormDialogView } from './AssetFormDialogView'
+import type { BBox } from '../model/asset.types'
 import type { AssetFormInput, AssetFormValues } from '../model/asset.schema'
 
-const defaultValues: AssetFormInput = {
-  name: '',
-  type: 'pipe',
-  status: 'ok',
+const fallbackLocation = {
   lat: 42.3601,
   lng: -71.0589,
-  installed_at: new Date().toISOString().slice(0, 10),
-  last_inspected_at: '',
-  notes: '',
+}
+
+function getBoundsCenter(bounds: BBox | null): Pick<AssetFormInput, 'lat' | 'lng'> {
+  if (!bounds) {
+    return fallbackLocation
+  }
+
+  return {
+    lat: Number(((bounds.minLat + bounds.maxLat) / 2).toFixed(6)),
+    lng: Number(((bounds.minLng + bounds.maxLng) / 2).toFixed(6)),
+  }
+}
+
+function createDefaultValues(bounds: BBox | null): AssetFormInput {
+  return {
+    name: '',
+    type: 'pipe',
+    status: 'ok',
+    ...getBoundsCenter(bounds),
+    installed_at: new Date().toISOString().slice(0, 10),
+    last_inspected_at: '',
+    notes: '',
+  }
 }
 
 export function AssetFormDialog() {
   const dispatch = useAppDispatch()
-  const { editingAssetId, formMode } = useAppSelector((state) => state.assetUi)
+  const { draftMapBounds, editingAssetId, formMode } = useAppSelector(
+    (state) => state.assetUi,
+  )
   const isOpen = formMode !== null
   const isEditMode = formMode === 'edit'
+  const defaultValues = useMemo(
+    () => createDefaultValues(draftMapBounds),
+    [draftMapBounds],
+  )
   const { data: editingAsset } = useGetAssetByIdQuery(
     isEditMode && editingAssetId ? editingAssetId : skipToken,
   )
@@ -57,10 +81,10 @@ export function AssetFormDialog() {
   const watchedLng = useWatch({ control, name: 'lng' })
   const lat = Number.isFinite(Number(watchedLat))
     ? Number(watchedLat)
-    : Number(defaultValues.lat)
+    : fallbackLocation.lat
   const lng = Number.isFinite(Number(watchedLng))
     ? Number(watchedLng)
-    : Number(defaultValues.lng)
+    : fallbackLocation.lng
 
   useEffect(() => {
     if (!isOpen) {
@@ -76,7 +100,7 @@ export function AssetFormDialog() {
     if (!isEditMode) {
       reset(defaultValues)
     }
-  }, [editingAsset, isEditMode, isOpen, reset])
+  }, [defaultValues, editingAsset, isEditMode, isOpen, reset])
 
   const isSaving = createState.isLoading || updateState.isLoading
 
@@ -103,16 +127,13 @@ export function AssetFormDialog() {
 
     dispatch(closeForm())
   }
-  const handleLocationPickerClick = useCallback(
-    (xRatio: number, yRatio: number) => {
-      const nextLat = 90 - yRatio * 180
-      const nextLng = xRatio * 360 - 180
-
-      setValue('lat', Number(nextLat.toFixed(6)), {
+  const handleLocationChange = useCallback(
+    (nextLat: number, nextLng: number) => {
+      setValue('lat', nextLat, {
         shouldDirty: true,
         shouldValidate: true,
       })
-      setValue('lng', Number(nextLng.toFixed(6)), {
+      setValue('lng', nextLng, {
         shouldDirty: true,
         shouldValidate: true,
       })
@@ -146,7 +167,7 @@ export function AssetFormDialog() {
       lat={lat}
       lng={lng}
       onCancel={() => dispatch(closeForm())}
-      onLocationPickerClick={handleLocationPickerClick}
+      onLocationChange={handleLocationChange}
       onSubmit={handleSubmit(onSubmit)}
       onUseCurrentLocation={handleUseCurrentLocation}
       register={register}

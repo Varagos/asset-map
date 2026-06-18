@@ -41,4 +41,5 @@ npm --prefix web test
 
 ## Notes
 
-Technical decisions and short history live in [CHANGELOG.md](CHANGELOG.md).
+Technical choices live in [TECHNICAL_DECISIONS.md](TECHNICAL_DECISIONS.md).
+Short history lives in [CHANGELOG.md](CHANGELOG.md).

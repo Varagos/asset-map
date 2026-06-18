@@ -62,6 +62,12 @@ describe.runIf(runDbTests)('TypeOrmAssetsRepository', () => {
 
     expect(result.total).toBe(1)
     expect(result.items[0]?.toPrimitives().name).toBe('Sensor A')
+    await expect(repository.summary()).resolves.toEqual({
+      total: 1,
+      ok: 1,
+      warning: 0,
+      critical: 0,
+    })
 
     const asset = await repository.findById(
       '17fc695a-07a0-4a6e-8822-e8f36c031199',

@@ -64,6 +64,15 @@ export function createAssetsRouter(application: AssetsApplication): Router {
   )
 
   router.get(
+    '/summary',
+    asyncHandler(async (_request, response) => {
+      const result = await application.getAssetsSummary.execute()
+
+      response.json(result)
+    }),
+  )
+
+  router.get(
     '/:id',
     asyncHandler(async (request, response) => {
       const { id } = parseOrThrow(assetIdParamsSchema, request.params)

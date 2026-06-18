@@ -41,4 +41,34 @@ describe('asset HTTP schemas', () => {
 
     expect(result.last_inspected_at).toBeNull()
   })
+
+  it('rejects last_inspected_at before installed_at', () => {
+    const result = assetBodySchema.safeParse({
+      name: 'Valve V-0001',
+      type: 'valve',
+      status: 'warning',
+      lat: 42,
+      lng: -71,
+      installed_at: '2021-01-02',
+      last_inspected_at: '2021-01-01',
+      notes: '',
+    })
+
+    expect(result.success).toBe(false)
+  })
+
+  it('accepts last_inspected_at on installed_at', () => {
+    const result = assetBodySchema.safeParse({
+      name: 'Valve V-0001',
+      type: 'valve',
+      status: 'warning',
+      lat: 42,
+      lng: -71,
+      installed_at: '2021-01-01',
+      last_inspected_at: '2021-01-01',
+      notes: '',
+    })
+
+    expect(result.success).toBe(true)
+  })
 })

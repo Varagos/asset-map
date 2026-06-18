@@ -38,4 +38,24 @@ describe('assetFormSchema', () => {
       }).success,
     ).toBe(true)
   })
+
+  it('rejects last inspected dates before the installed date', () => {
+    expect(
+      assetFormSchema.safeParse({
+        ...validAssetFormInput,
+        installed_at: '2025-01-02',
+        last_inspected_at: '2025-01-01',
+      }).success,
+    ).toBe(false)
+  })
+
+  it('accepts last inspected dates on the installed date', () => {
+    expect(
+      assetFormSchema.safeParse({
+        ...validAssetFormInput,
+        installed_at: '2025-01-02',
+        last_inspected_at: '2025-01-02',
+      }).success,
+    ).toBe(true)
+  })
 })

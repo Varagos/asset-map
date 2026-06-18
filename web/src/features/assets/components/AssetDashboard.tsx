@@ -1,6 +1,9 @@
 import { useEffect, useMemo } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../app/hooks'
-import { useGetAssetsQuery } from '../api/assetsApi'
+import {
+  useGetAssetsQuery,
+  useGetAssetsSummaryQuery,
+} from '../api/assetsApi'
 import {
   openCreateForm,
   selectAsset,
@@ -43,20 +46,11 @@ export function AssetDashboard() {
     }),
     [query],
   )
-  const allAssetsQuery = useMemo<GetAssetsQuery>(
-    () => ({
-      limit: MAP_ASSET_LIMIT,
-      offset: 0,
-      sort: 'status',
-    }),
-    [],
-  )
   const { data: listResult, isLoading } = useGetAssetsQuery(listQuery)
   const { data: mapResult } = useGetAssetsQuery(mapQuery)
-  const { data: allAssetsResult } = useGetAssetsQuery(allAssetsQuery)
+  const { data: summary } = useGetAssetsSummaryQuery()
   const assets = listResult?.items ?? []
   const mapAssets = mapResult?.items ?? assets
-  const allAssets = allAssetsResult?.items ?? []
   const totalFilteredAssets = listResult?.total ?? 0
   const totalPages = Math.max(1, Math.ceil(totalFilteredAssets / LIST_PAGE_SIZE))
   const currentPage = Math.min(listPage, totalPages)
@@ -67,18 +61,10 @@ export function AssetDashboard() {
     }
   }, [dispatch, listPage, totalPages])
 
-  const okCount = allAssets.filter((asset) => asset.status === 'ok').length
-  const warningCount = allAssets.filter(
-    (asset) => asset.status === 'warning',
-  ).length
-  const criticalCount = allAssets.filter(
-    (asset) => asset.status === 'critical',
-  ).length
-
   return (
     <AssetDashboardView
       assets={assets}
-      criticalCount={criticalCount}
+      criticalCount={summary?.critical ?? 0}
       deleteDialog={<DeleteAssetDialog />}
       detailDrawer={<AssetDetailDrawer />}
       filters={<AssetFilters />}
@@ -92,7 +78,7 @@ export function AssetDashboard() {
           selectedAssetId={selectedAssetId}
         />
       }
-      okCount={okCount}
+      okCount={summary?.ok ?? 0}
       onCreateAsset={() => dispatch(openCreateForm())}
       onListPageChange={(page) => dispatch(setListPage(page))}
       onListSortChange={(sort) => dispatch(setListSort(sort))}
@@ -101,10 +87,10 @@ export function AssetDashboard() {
       pageSize={LIST_PAGE_SIZE}
       selectedAssetId={selectedAssetId}
       sort={listSort}
-      totalCount={allAssets.length}
+      totalCount={summary?.total ?? 0}
       totalFilteredAssets={totalFilteredAssets}
       totalPages={totalPages}
-      warningCount={warningCount}
+      warningCount={summary?.warning ?? 0}
     />
   )
 }

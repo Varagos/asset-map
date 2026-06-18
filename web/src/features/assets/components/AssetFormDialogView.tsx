@@ -1,4 +1,4 @@
-import type { BaseSyntheticEvent, MouseEvent } from 'react'
+import type { BaseSyntheticEvent } from 'react'
 import {
   AlertTriangle,
   CalendarDays,
@@ -6,13 +6,13 @@ import {
   ChevronDown,
   LocateFixed,
   MapPin,
-  MousePointerClick,
   PencilLine,
   Save,
   X,
 } from 'lucide-react'
 import type { FieldErrors, UseFormRegister } from 'react-hook-form'
 import { ASSET_STATUSES, ASSET_TYPES } from '../model/asset.types'
+import { AssetLocationPicker } from './AssetLocationPicker'
 import type { AssetFormInput } from '../model/asset.schema'
 
 type AssetFormDialogViewProps = {
@@ -24,7 +24,7 @@ type AssetFormDialogViewProps = {
   lat: number
   lng: number
   onCancel: () => void
-  onLocationPickerClick: (xRatio: number, yRatio: number) => void
+  onLocationChange: (lat: number, lng: number) => void
   onSubmit: (event?: BaseSyntheticEvent) => Promise<void>
   onUseCurrentLocation: () => void
   register: UseFormRegister<AssetFormInput>
@@ -42,12 +42,6 @@ function fieldError(message: string | undefined) {
   return message ? <span className="text-xs text-error">{message}</span> : null
 }
 
-function markerPosition(value: number, min: number, max: number): number {
-  const ratio = ((value - min) / (max - min)) * 100
-
-  return Math.min(92, Math.max(8, ratio))
-}
-
 export function AssetFormDialogView({
   assetName,
   errors,
@@ -57,7 +51,7 @@ export function AssetFormDialogView({
   lat,
   lng,
   onCancel,
-  onLocationPickerClick,
+  onLocationChange,
   onSubmit,
   onUseCurrentLocation,
   register,
@@ -66,16 +60,6 @@ export function AssetFormDialogView({
     return null
   }
 
-  function handleMapClick(event: MouseEvent<HTMLButtonElement>) {
-    const rect = event.currentTarget.getBoundingClientRect()
-    const xRatio = (event.clientX - rect.left) / rect.width
-    const yRatio = (event.clientY - rect.top) / rect.height
-
-    onLocationPickerClick(xRatio, yRatio)
-  }
-
-  const markerLeft = markerPosition(lng, -180, 180)
-  const markerTop = markerPosition(90 - lat, 0, 180)
   const title = isEditMode
     ? `Edit Asset${assetName ? `: ${assetName}` : ''}`
     : 'New Asset'
@@ -241,32 +225,11 @@ export function AssetFormDialogView({
                   </button>
                 </div>
 
-                <button
-                  aria-label="Click map to choose location"
-                  className="group relative min-h-[200px] cursor-crosshair overflow-hidden rounded-lg border border-outline-variant bg-surface md:col-span-8"
-                  onClick={handleMapClick}
-                  type="button"
-                >
-                  <span className="absolute inset-0 bg-[linear-gradient(90deg,rgba(197,198,205,0.42)_1px,transparent_1px),linear-gradient(0deg,rgba(197,198,205,0.42)_1px,transparent_1px)] bg-[size:32px_32px]" />
-                  <span className="absolute inset-0 bg-[radial-gradient(circle_at_35%_40%,rgba(216,227,251,0.85),transparent_28%),radial-gradient(circle_at_75%_65%,rgba(250,223,184,0.55),transparent_26%)]" />
-                  <span className="absolute left-8 right-8 top-1/2 h-1 rounded-full bg-primary/20" />
-                  <span className="absolute bottom-8 top-8 left-1/2 w-1 rounded-full bg-primary/20" />
-                  <span
-                    className="absolute -translate-x-1/2 -translate-y-full text-error drop-shadow-md transition-transform group-hover:scale-110"
-                    style={{
-                      left: `${markerLeft}%`,
-                      top: `${markerTop}%`,
-                    }}
-                  >
-                    <MapPin className="h-8 w-8 fill-error" />
-                  </span>
-                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-surface/95 to-transparent p-sm text-center">
-                    <span className="inline-flex items-center gap-xs rounded bg-surface/80 px-sm py-xs text-xs font-semibold text-primary shadow-sm backdrop-blur">
-                      <MousePointerClick className="h-4 w-4" />
-                      Click map to choose location
-                    </span>
-                  </span>
-                </button>
+                <AssetLocationPicker
+                  lat={lat}
+                  lng={lng}
+                  onLocationChange={onLocationChange}
+                />
               </div>
             </section>
 
