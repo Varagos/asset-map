@@ -2,6 +2,8 @@
 
 Small full-stack asset map app with React, Redux Toolkit, Express, TypeORM, and PostGIS.
 
+![alt text](image.png)
+
 ## First Run
 
 ```sh
