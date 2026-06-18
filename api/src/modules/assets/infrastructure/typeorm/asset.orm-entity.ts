@@ -1,8 +1,5 @@
 import { Column, Entity, PrimaryColumn, type Point } from 'typeorm'
-import type {
-  AssetStatus,
-  AssetType,
-} from '../../domain/asset.types'
+import type { AssetStatus, AssetType } from '../../domain/asset.types'
 
 @Entity({ name: 'assets' })
 export class AssetOrmEntity {

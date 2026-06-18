@@ -16,15 +16,18 @@ const validAsset = {
 
 describe('Asset', () => {
   it('accepts a valid asset and normalizes the name', () => {
-    const asset = Asset.reconstitute({ ...validAsset, name: '  Sensor S-0001 ' })
+    const asset = Asset.reconstitute({
+      ...validAsset,
+      name: '  Sensor S-0001 ',
+    })
 
     expect(asset.toPrimitives().name).toBe('Sensor S-0001')
   })
 
   it('rejects invalid coordinates', () => {
-    expect(() =>
-      Asset.reconstitute({ ...validAsset, lat: 91 }),
-    ).toThrow(InvalidAssetError)
+    expect(() => Asset.reconstitute({ ...validAsset, lat: 91 })).toThrow(
+      InvalidAssetError,
+    )
   })
 
   it('accepts null last_inspected_at', () => {
@@ -34,5 +37,19 @@ describe('Asset', () => {
     })
 
     expect(asset.toPrimitives().last_inspected_at).toBeNull()
+  })
+
+  it('updates through fine-grained domain methods', () => {
+    const asset = Asset.reconstitute(validAsset)
+      .rename('Sensor S-0001A')
+      .changeStatus('warning')
+      .relocate(42, -71)
+
+    expect(asset.toPrimitives()).toMatchObject({
+      name: 'Sensor S-0001A',
+      status: 'warning',
+      lat: 42,
+      lng: -71,
+    })
   })
 })

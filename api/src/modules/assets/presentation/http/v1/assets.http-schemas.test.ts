@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  assetBodySchema,
-  listAssetsQuerySchema,
-} from './assets.http-schemas'
+import { assetBodySchema, listAssetsQuerySchema } from './assets.http-schemas'
 
 describe('asset HTTP schemas', () => {
   it('rejects partial bbox query params', () => {

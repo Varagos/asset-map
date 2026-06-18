@@ -28,5 +28,7 @@ export type AssetProps = {
 export type CreateAssetInput = Omit<AssetProps, 'id'>
 
 export type UpdateAssetInput = {
-  [Key in keyof Omit<AssetProps, 'id'>]?: Omit<AssetProps, 'id'>[Key] | undefined
+  [Key in keyof Omit<AssetProps, 'id'>]?:
+    | Omit<AssetProps, 'id'>[Key]
+    | undefined
 }

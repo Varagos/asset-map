@@ -26,7 +26,7 @@ module.exports = tseslint.config(
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': [
         'error',
-        { checksVoidReturn: { attributes: false } }
+        { checksVoidReturn: { attributes: false } },
       ],
       '@typescript-eslint/no-unused-vars': [
         'error',

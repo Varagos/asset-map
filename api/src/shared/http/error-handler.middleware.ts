@@ -1,6 +1,9 @@
 import { ZodError } from 'zod'
 import { DomainError } from '../errors/domain-error'
-import { AssetNotFoundError, InvalidAssetError } from '../../modules/assets/domain/asset.errors'
+import {
+  AssetNotFoundError,
+  InvalidAssetError,
+} from '../../modules/assets/domain/asset.errors'
 import { RequestValidationError } from './request-validation-error'
 import type { NextFunction, Request, Response } from 'express'
 

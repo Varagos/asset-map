@@ -6,7 +6,10 @@ import type {
 import type { Asset } from '../modules/assets/domain/asset.entity'
 import type { AssetProps } from '../modules/assets/domain/asset.types'
 
-function isInsideBBox(asset: AssetProps, criteria: ListAssetsCriteria): boolean {
+function isInsideBBox(
+  asset: AssetProps,
+  criteria: ListAssetsCriteria,
+): boolean {
   if (!criteria.bbox) {
     return true
   }
@@ -33,7 +36,10 @@ function statusRank(status: AssetProps['status']): number {
   return 2
 }
 
-function sortAssets(assets: Asset[], sort: ListAssetsCriteria['sort']): Asset[] {
+function sortAssets(
+  assets: Asset[],
+  sort: ListAssetsCriteria['sort'],
+): Asset[] {
   return [...assets].sort((leftAsset, rightAsset) => {
     const left = leftAsset.toPrimitives()
     const right = rightAsset.toPrimitives()

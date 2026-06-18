@@ -3,8 +3,9 @@ import {
   ASSET_STATUSES,
   ASSET_TYPES,
   type AssetProps,
+  type AssetStatus,
+  type AssetType,
   type CreateAssetInput,
-  type UpdateAssetInput,
 } from './asset.types'
 import { InvalidAssetError } from './asset.errors'
 
@@ -84,25 +85,53 @@ export class Asset {
     return new Asset({ ...props, name: props.name.trim() })
   }
 
-  update(changes: UpdateAssetInput): Asset {
+  rename(name: string): Asset {
     return Asset.reconstitute({
-      id: this.props.id,
-      name:
-        changes.name === undefined ? this.props.name : changes.name.trim(),
-      type: changes.type === undefined ? this.props.type : changes.type,
-      status:
-        changes.status === undefined ? this.props.status : changes.status,
-      lat: changes.lat === undefined ? this.props.lat : changes.lat,
-      lng: changes.lng === undefined ? this.props.lng : changes.lng,
-      installed_at:
-        changes.installed_at === undefined
-          ? this.props.installed_at
-          : changes.installed_at,
-      last_inspected_at:
-        changes.last_inspected_at === undefined
-          ? this.props.last_inspected_at
-          : changes.last_inspected_at,
-      notes: changes.notes === undefined ? this.props.notes : changes.notes,
+      ...this.props,
+      name: name.trim(),
+    })
+  }
+
+  changeType(type: AssetType): Asset {
+    return Asset.reconstitute({
+      ...this.props,
+      type,
+    })
+  }
+
+  changeStatus(status: AssetStatus): Asset {
+    return Asset.reconstitute({
+      ...this.props,
+      status,
+    })
+  }
+
+  relocate(lat: number, lng: number): Asset {
+    return Asset.reconstitute({
+      ...this.props,
+      lat,
+      lng,
+    })
+  }
+
+  changeInstallationDate(installedAt: string): Asset {
+    return Asset.reconstitute({
+      ...this.props,
+      installed_at: installedAt,
+    })
+  }
+
+  changeLastInspectionDate(lastInspectedAt: string | null): Asset {
+    return Asset.reconstitute({
+      ...this.props,
+      last_inspected_at: lastInspectedAt,
+    })
+  }
+
+  changeNotes(notes: string): Asset {
+    return Asset.reconstitute({
+      ...this.props,
+      notes,
     })
   }
 

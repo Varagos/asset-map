@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DataSource } from 'typeorm'
 import { CreateAssets1710000000000 } from '../../../../database/migrations/1710000000000-CreateAssets'
+import { AddAssetQueryIndexes1710000001000 } from '../../../../database/migrations/1710000001000-AddAssetQueryIndexes'
 import { Asset } from '../../domain/asset.entity'
 import { AssetOrmEntity } from './asset.orm-entity'
 import { TypeOrmAssetsRepository } from './typeorm-assets.repository'
@@ -16,10 +17,14 @@ describe.runIf(runDbTests)('TypeOrmAssetsRepository', () => {
         'postgres://asset_map:asset_map@localhost:5433/asset_map',
       synchronize: false,
       migrationsRun: false,
+      migrationsTransactionMode: 'each',
       dropSchema: false,
       installExtensions: false,
       entities: [AssetOrmEntity],
-      migrations: [CreateAssets1710000000000],
+      migrations: [
+        CreateAssets1710000000000,
+        AddAssetQueryIndexes1710000001000,
+      ],
     })
 
     await dataSource.initialize()

@@ -70,6 +70,8 @@ export class TypeOrmAssetsRepository implements AssetsRepository {
     }
 
     if (criteria.bbox) {
+      // PostGIS envelopes use x/y ordering, so GPS bounds are lng/lat.
+      // ST_Covers keeps assets on the map edge included in the result.
       queryBuilder.andWhere(
         `ST_Covers(
           ST_MakeEnvelope(:minLng, :minLat, :maxLng, :maxLat, 4326),

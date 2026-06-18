@@ -5,7 +5,10 @@ import {
   ASSET_TYPES,
   type BBox,
 } from '../../../domain/asset.types'
-import type { CreateAssetInput, UpdateAssetInput } from '../../../domain/asset.types'
+import type {
+  CreateAssetInput,
+  UpdateAssetInput,
+} from '../../../domain/asset.types'
 import type { ListAssetsCriteria } from '../../../application/ports/assets.repository'
 
 const validDateString = z.string().refine((value) => {
@@ -132,7 +135,8 @@ const assetBodyObjectSchema = z.object({
   notes: z.string(),
 })
 
-export const assetBodySchema: z.ZodType<CreateAssetInput> = assetBodyObjectSchema
+export const assetBodySchema: z.ZodType<CreateAssetInput> =
+  assetBodyObjectSchema
 
 export const updateAssetBodySchema: z.ZodType<UpdateAssetInput> =
   assetBodyObjectSchema
