@@ -22,9 +22,17 @@ export type PaginatedAssets = {
   offset: number
 }
 
+export type SaveAssetOptions = {
+  expectedVersion?: number
+}
+
+export type DeleteAssetOptions = {
+  expectedVersion?: number
+}
+
 export interface AssetsRepository {
   list(criteria: ListAssetsCriteria): Promise<PaginatedAssets>
   findById(id: string): Promise<Asset | null>
-  save(asset: Asset): Promise<Asset>
-  deleteById(id: string): Promise<boolean>
+  save(asset: Asset, options?: SaveAssetOptions): Promise<Asset>
+  deleteById(id: string, options?: DeleteAssetOptions): Promise<boolean>
 }

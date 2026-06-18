@@ -2,6 +2,9 @@ import { ZodError } from 'zod'
 import { DomainError } from '../errors/domain-error'
 import {
   AssetNotFoundError,
+  AssetVersionConflictError,
+  AssetVersionPreconditionRequiredError,
+  InvalidAssetVersionPreconditionError,
   InvalidAssetError,
 } from '../../modules/assets/domain/asset.errors'
 import { RequestValidationError } from './request-validation-error'
@@ -79,6 +82,21 @@ export function errorHandlerMiddleware(
 
   if (error instanceof InvalidAssetError) {
     sendError(response, 400, error.code, error.message, error.details)
+    return
+  }
+
+  if (error instanceof AssetVersionPreconditionRequiredError) {
+    sendError(response, 428, error.code, error.message)
+    return
+  }
+
+  if (error instanceof InvalidAssetVersionPreconditionError) {
+    sendError(response, 400, error.code, error.message)
+    return
+  }
+
+  if (error instanceof AssetVersionConflictError) {
+    sendError(response, 412, error.code, error.message)
     return
   }
 

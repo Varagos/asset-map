@@ -19,11 +19,14 @@ export function DeleteAssetDialog() {
   const [deleteAsset, deleteState] = useDeleteAssetMutation()
 
   async function confirmDelete() {
-    if (!deletingAssetId) {
+    if (!deletingAssetId || !asset) {
       return
     }
 
-    await deleteAsset(deletingAssetId).unwrap()
+    await deleteAsset({
+      id: deletingAssetId,
+      version: asset.version,
+    }).unwrap()
 
     if (selectedAssetId === deletingAssetId) {
       dispatch(selectAsset(null))

@@ -15,6 +15,7 @@ export type BBox = {
 
 export type AssetProps = {
   id: string
+  version: number
   name: string
   type: AssetType
   status: AssetStatus
@@ -25,10 +26,10 @@ export type AssetProps = {
   notes: string
 }
 
-export type CreateAssetInput = Omit<AssetProps, 'id'>
+type UpdatableAssetProps = Omit<AssetProps, 'id' | 'version'>
+
+export type CreateAssetInput = UpdatableAssetProps
 
 export type UpdateAssetInput = {
-  [Key in keyof Omit<AssetProps, 'id'>]?:
-    | Omit<AssetProps, 'id'>[Key]
-    | undefined
+  [Key in keyof UpdatableAssetProps]?: UpdatableAssetProps[Key] | undefined
 }

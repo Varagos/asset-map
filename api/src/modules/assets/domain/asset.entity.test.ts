@@ -4,6 +4,7 @@ import { InvalidAssetError } from './asset.errors'
 
 const validAsset = {
   id: '17fc695a-07a0-4a6e-8822-e8f36c031199',
+  version: 1,
   name: 'Sensor S-0001',
   type: 'sensor' as const,
   status: 'ok' as const,
@@ -41,9 +42,10 @@ describe('Asset', () => {
 
   it('updates through fine-grained domain methods', () => {
     const asset = Asset.reconstitute(validAsset)
-      .rename('Sensor S-0001A')
-      .changeStatus('warning')
-      .relocate(42, -71)
+
+    asset.rename('Sensor S-0001A')
+    asset.changeStatus('warning')
+    asset.relocate(42, -71)
 
     expect(asset.toPrimitives()).toMatchObject({
       name: 'Sensor S-0001A',

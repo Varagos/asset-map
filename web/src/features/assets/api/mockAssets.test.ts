@@ -5,6 +5,7 @@ import type { Asset } from '../model/asset.types'
 const assets: Asset[] = [
   {
     id: 'asset-1',
+    version: 1,
     name: 'Pipe P-0001',
     type: 'pipe',
     status: 'ok',
@@ -16,6 +17,7 @@ const assets: Asset[] = [
   },
   {
     id: 'asset-2',
+    version: 1,
     name: 'Sensor S-0002',
     type: 'sensor',
     status: 'warning',
@@ -27,6 +29,7 @@ const assets: Asset[] = [
   },
   {
     id: 'asset-3',
+    version: 1,
     name: 'Valve V-0003',
     type: 'valve',
     status: 'critical',

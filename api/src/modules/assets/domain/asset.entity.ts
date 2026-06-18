@@ -27,6 +27,10 @@ function validateAssetProps(props: AssetProps): void {
     issues.push('id is required')
   }
 
+  if (!Number.isInteger(props.version) || props.version < 1) {
+    issues.push('version must be a positive integer')
+  }
+
   if (!props.name.trim()) {
     issues.push('name is required')
   }
@@ -68,12 +72,13 @@ function validateAssetProps(props: AssetProps): void {
 }
 
 export class Asset {
-  private constructor(private readonly props: AssetProps) {}
+  private constructor(private props: AssetProps) {}
 
   static create(input: CreateAssetInput, id = randomUUID()): Asset {
     return Asset.reconstitute({
       ...input,
       id,
+      version: 1,
       name: input.name.trim(),
       notes: input.notes,
     })
@@ -85,51 +90,51 @@ export class Asset {
     return new Asset({ ...props, name: props.name.trim() })
   }
 
-  rename(name: string): Asset {
-    return Asset.reconstitute({
+  rename(name: string): void {
+    this.replaceProps({
       ...this.props,
       name: name.trim(),
     })
   }
 
-  changeType(type: AssetType): Asset {
-    return Asset.reconstitute({
+  changeType(type: AssetType): void {
+    this.replaceProps({
       ...this.props,
       type,
     })
   }
 
-  changeStatus(status: AssetStatus): Asset {
-    return Asset.reconstitute({
+  changeStatus(status: AssetStatus): void {
+    this.replaceProps({
       ...this.props,
       status,
     })
   }
 
-  relocate(lat: number, lng: number): Asset {
-    return Asset.reconstitute({
+  relocate(lat: number, lng: number): void {
+    this.replaceProps({
       ...this.props,
       lat,
       lng,
     })
   }
 
-  changeInstallationDate(installedAt: string): Asset {
-    return Asset.reconstitute({
+  changeInstallationDate(installedAt: string): void {
+    this.replaceProps({
       ...this.props,
       installed_at: installedAt,
     })
   }
 
-  changeLastInspectionDate(lastInspectedAt: string | null): Asset {
-    return Asset.reconstitute({
+  changeLastInspectionDate(lastInspectedAt: string | null): void {
+    this.replaceProps({
       ...this.props,
       last_inspected_at: lastInspectedAt,
     })
   }
 
-  changeNotes(notes: string): Asset {
-    return Asset.reconstitute({
+  changeNotes(notes: string): void {
+    this.replaceProps({
       ...this.props,
       notes,
     })
@@ -137,5 +142,10 @@ export class Asset {
 
   toPrimitives(): AssetProps {
     return { ...this.props }
+  }
+
+  private replaceProps(nextProps: AssetProps): void {
+    validateAssetProps(nextProps)
+    this.props = { ...nextProps, name: nextProps.name.trim() }
   }
 }

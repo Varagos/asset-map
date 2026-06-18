@@ -32,7 +32,7 @@ async function seed(): Promise<void> {
   )
 
   for (const seedAsset of parsedSeedAssets) {
-    await repository.save(Asset.reconstitute(seedAsset))
+    await repository.save(Asset.reconstitute({ ...seedAsset, version: 1 }))
   }
 
   console.log(`Seeded ${parsedSeedAssets.length} assets`)

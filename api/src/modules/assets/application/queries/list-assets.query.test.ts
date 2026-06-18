@@ -6,6 +6,7 @@ import { FakeAssetsRepository } from '../../../../test/fake-assets.repository'
 const assets = [
   Asset.reconstitute({
     id: '17fc695a-07a0-4a6e-8822-e8f36c031199',
+    version: 1,
     name: 'Sensor A',
     type: 'sensor',
     status: 'critical',
@@ -17,6 +18,7 @@ const assets = [
   }),
   Asset.reconstitute({
     id: 'cfe313dc-b092-4238-a56f-b3b5e477fdd0',
+    version: 1,
     name: 'Valve B',
     type: 'valve',
     status: 'ok',

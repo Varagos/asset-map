@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { DataSource } from 'typeorm'
 import { CreateAssets1710000000000 } from '../../../../database/migrations/1710000000000-CreateAssets'
 import { AddAssetQueryIndexes1710000001000 } from '../../../../database/migrations/1710000001000-AddAssetQueryIndexes'
+import { AddAssetVersion1710000002000 } from '../../../../database/migrations/1710000002000-AddAssetVersion'
 import { Asset } from '../../domain/asset.entity'
+import { AssetVersionConflictError } from '../../domain/asset.errors'
 import { AssetOrmEntity } from './asset.orm-entity'
 import { TypeOrmAssetsRepository } from './typeorm-assets.repository'
 
@@ -24,6 +26,7 @@ describe.runIf(runDbTests)('TypeOrmAssetsRepository', () => {
       migrations: [
         CreateAssets1710000000000,
         AddAssetQueryIndexes1710000001000,
+        AddAssetVersion1710000002000,
       ],
     })
 
@@ -38,6 +41,7 @@ describe.runIf(runDbTests)('TypeOrmAssetsRepository', () => {
     await repository.save(
       Asset.reconstitute({
         id: '17fc695a-07a0-4a6e-8822-e8f36c031199',
+        version: 1,
         name: 'Sensor A',
         type: 'sensor',
         status: 'ok',
@@ -58,6 +62,32 @@ describe.runIf(runDbTests)('TypeOrmAssetsRepository', () => {
 
     expect(result.total).toBe(1)
     expect(result.items[0]?.toPrimitives().name).toBe('Sensor A')
+
+    const asset = await repository.findById(
+      '17fc695a-07a0-4a6e-8822-e8f36c031199',
+    )
+
+    expect(asset).not.toBeNull()
+    if (!asset) {
+      throw new Error('Expected seeded asset to exist')
+    }
+
+    asset.changeStatus('critical')
+
+    const updatedAsset = await repository.save(asset, {
+      expectedVersion: 1,
+    })
+
+    expect(updatedAsset.toPrimitives()).toMatchObject({
+      status: 'critical',
+      version: 2,
+    })
+
+    asset.changeStatus('warning')
+
+    await expect(
+      repository.save(asset, { expectedVersion: 1 }),
+    ).rejects.toThrow(AssetVersionConflictError)
 
     await dataSource.destroy()
   })

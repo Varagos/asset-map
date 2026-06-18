@@ -18,3 +18,27 @@ export class InvalidAssetError extends DomainError {
     super(message)
   }
 }
+
+export class AssetVersionPreconditionRequiredError extends DomainError {
+  readonly code = 'ASSET_VERSION_PRECONDITION_REQUIRED'
+
+  constructor() {
+    super('Send If-Match with the asset version before writing this asset')
+  }
+}
+
+export class InvalidAssetVersionPreconditionError extends DomainError {
+  readonly code = 'INVALID_ASSET_VERSION_PRECONDITION'
+
+  constructor() {
+    super('If-Match must be a strong ETag containing a positive asset version')
+  }
+}
+
+export class AssetVersionConflictError extends DomainError {
+  readonly code = 'ASSET_VERSION_CONFLICT'
+
+  constructor(id: string) {
+    super(`Asset ${id} has changed since it was loaded`)
+  }
+}

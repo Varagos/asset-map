@@ -2,12 +2,17 @@ import { Router } from 'express'
 import { asyncHandler } from '../../../../../shared/http/async-handler'
 import { RequestValidationError } from '../../../../../shared/http/request-validation-error'
 import {
+  AssetVersionPreconditionRequiredError,
+  InvalidAssetVersionPreconditionError,
+} from '../../../domain/asset.errors'
+import {
   assetBodySchema,
   assetIdParamsSchema,
   listAssetsQuerySchema,
   updateAssetBodySchema,
 } from './assets.http-schemas'
 import type { AssetsApplication } from '../../../application/assets.application'
+import type { AssetDto } from '../../../application/asset.dto'
 import type { SafeParseReturnType } from 'zod'
 
 type SafeParseSchema<TOutput> = {
@@ -25,6 +30,24 @@ function parseOrThrow<TOutput>(
   }
 
   return result.data
+}
+
+function toAssetEtag(asset: AssetDto): string {
+  return `"${asset.version}"`
+}
+
+function parseIfMatchVersion(value: string | undefined): number {
+  if (value === undefined) {
+    throw new AssetVersionPreconditionRequiredError()
+  }
+
+  const match = /^"([1-9]\d*)"$/.exec(value.trim())
+
+  if (!match?.[1]) {
+    throw new InvalidAssetVersionPreconditionError()
+  }
+
+  return Number(match[1])
 }
 
 export function createAssetsRouter(application: AssetsApplication): Router {
@@ -46,6 +69,7 @@ export function createAssetsRouter(application: AssetsApplication): Router {
       const { id } = parseOrThrow(assetIdParamsSchema, request.params)
       const result = await application.getAssetById.execute(id)
 
+      response.setHeader('ETag', toAssetEtag(result))
       response.json(result)
     }),
   )
@@ -56,6 +80,7 @@ export function createAssetsRouter(application: AssetsApplication): Router {
       const body = parseOrThrow(assetBodySchema, request.body)
       const result = await application.createAsset.execute(body)
 
+      response.setHeader('ETag', toAssetEtag(result))
       response.status(201).json(result)
     }),
   )
@@ -64,9 +89,15 @@ export function createAssetsRouter(application: AssetsApplication): Router {
     '/:id',
     asyncHandler(async (request, response) => {
       const { id } = parseOrThrow(assetIdParamsSchema, request.params)
+      const expectedVersion = parseIfMatchVersion(request.get('if-match'))
       const changes = parseOrThrow(updateAssetBodySchema, request.body)
-      const result = await application.updateAsset.execute({ id, changes })
+      const result = await application.updateAsset.execute({
+        id,
+        expectedVersion,
+        changes,
+      })
 
+      response.setHeader('ETag', toAssetEtag(result))
       response.json(result)
     }),
   )
@@ -75,8 +106,9 @@ export function createAssetsRouter(application: AssetsApplication): Router {
     '/:id',
     asyncHandler(async (request, response) => {
       const { id } = parseOrThrow(assetIdParamsSchema, request.params)
+      const expectedVersion = parseIfMatchVersion(request.get('if-match'))
 
-      await application.deleteAsset.execute(id)
+      await application.deleteAsset.execute({ id, expectedVersion })
       response.status(204).send()
     }),
   )

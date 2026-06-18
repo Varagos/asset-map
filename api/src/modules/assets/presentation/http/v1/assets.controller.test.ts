@@ -9,6 +9,7 @@ function createTestApp() {
   const repository = new FakeAssetsRepository([
     Asset.reconstitute({
       id: '17fc695a-07a0-4a6e-8822-e8f36c031199',
+      version: 1,
       name: 'Sensor A',
       type: 'sensor',
       status: 'critical',
@@ -20,6 +21,7 @@ function createTestApp() {
     }),
     Asset.reconstitute({
       id: 'cfe313dc-b092-4238-a56f-b3b5e477fdd0',
+      version: 1,
       name: 'Valve B',
       type: 'valve',
       status: 'ok',
@@ -89,21 +91,48 @@ describe('assets controller', () => {
         notes: '',
       })
       .expect(201)
-    const createdBody = created.body as { id: string }
+      .expect('ETag', '"1"')
+    const createdBody = created.body as { id: string; version: number }
 
     const assetId = createdBody.id
 
     await request(app)
       .patch(`/api/v1/assets/${assetId}`)
+      .set('If-Match', `"${createdBody.version}"`)
       .send({ status: 'critical' })
       .expect(200)
+      .expect('ETag', '"2"')
       .expect((response) => {
         const body = response.body as { status: string }
 
         expect(body.status).toBe('critical')
       })
 
-    await request(app).delete(`/api/v1/assets/${assetId}`).expect(204)
+    await request(app)
+      .delete(`/api/v1/assets/${assetId}`)
+      .set('If-Match', '"2"')
+      .expect(204)
     await request(app).get(`/api/v1/assets/${assetId}`).expect(404)
+  })
+
+  it('rejects stale asset updates', async () => {
+    const app = createTestApp()
+
+    await request(app)
+      .patch('/api/v1/assets/17fc695a-07a0-4a6e-8822-e8f36c031199')
+      .send({ status: 'ok' })
+      .expect(428)
+
+    await request(app)
+      .patch('/api/v1/assets/17fc695a-07a0-4a6e-8822-e8f36c031199')
+      .set('If-Match', '"0"')
+      .send({ status: 'ok' })
+      .expect(400)
+
+    await request(app)
+      .patch('/api/v1/assets/17fc695a-07a0-4a6e-8822-e8f36c031199')
+      .set('If-Match', '"99"')
+      .send({ status: 'ok' })
+      .expect(412)
   })
 })

@@ -4,6 +4,7 @@ import type { Asset, BBox } from '../../features/assets/model/asset.types'
 
 const asset: Asset = {
   id: 'asset-1',
+  version: 1,
   name: 'Hydrant H-0001',
   type: 'hydrant',
   status: 'ok',

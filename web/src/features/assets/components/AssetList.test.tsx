@@ -6,6 +6,7 @@ import type { Asset } from '../model/asset.types'
 const filteredAssets: Asset[] = [
   {
     id: 'asset-1',
+    version: 1,
     name: 'Pipe P-0001',
     type: 'pipe',
     status: 'ok',

@@ -5,10 +5,15 @@ import {
 import type {
   Asset,
   CreateAssetInput,
+  DeleteAssetInput,
   GetAssetsQuery,
   GetAssetsResponse,
   UpdateAssetInput,
 } from '../model/asset.types'
+
+function toEntityTag(version: number): string {
+  return `"${version}"`
+}
 
 function toSearchParams(query: GetAssetsQuery = {}) {
   const params = new URLSearchParams()
@@ -82,9 +87,12 @@ export const assetsApi = createApi({
       invalidatesTags: [{ type: 'Asset', id: 'LIST' }],
     }),
     updateAsset: builder.mutation<Asset, UpdateAssetInput>({
-      query: ({ id, changes }) => ({
+      query: ({ id, version, changes }) => ({
         url: `assets/${id}`,
         method: 'PATCH',
+        headers: {
+          'If-Match': toEntityTag(version),
+        },
         body: changes,
       }),
       invalidatesTags: (_result, _error, { id }) => [
@@ -92,12 +100,15 @@ export const assetsApi = createApi({
         { type: 'Asset', id: 'LIST' },
       ],
     }),
-    deleteAsset: builder.mutation<void, string>({
-      query: (id) => ({
+    deleteAsset: builder.mutation<void, DeleteAssetInput>({
+      query: ({ id, version }) => ({
         url: `assets/${id}`,
         method: 'DELETE',
+        headers: {
+          'If-Match': toEntityTag(version),
+        },
       }),
-      invalidatesTags: (_result, _error, id) => [
+      invalidatesTags: (_result, _error, { id }) => [
         { type: 'Asset', id },
         { type: 'Asset', id: 'LIST' },
       ],

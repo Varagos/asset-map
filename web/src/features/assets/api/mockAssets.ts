@@ -2,7 +2,12 @@ import seedAssets from './seed.json'
 import { isAssetInsideBBox } from '../../../shared/utils/bbox'
 import type { Asset, GetAssetsQuery } from '../model/asset.types'
 
-export const initialMockAssets = seedAssets as Asset[]
+export const initialMockAssets: Asset[] = (
+  seedAssets as Array<Omit<Asset, 'version'>>
+).map((asset) => ({
+  ...asset,
+  version: 1,
+}))
 
 export function cloneMockAssets(): Asset[] {
   return initialMockAssets.map((asset) => ({ ...asset }))

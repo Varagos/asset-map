@@ -7,6 +7,7 @@ export type AssetListSort = 'status' | 'name'
 
 export type Asset = {
   id: string
+  version: number
   name: string
   type: AssetType
   status: AssetStatus
@@ -40,9 +41,15 @@ export type GetAssetsResponse = {
   offset: number
 }
 
-export type CreateAssetInput = Omit<Asset, 'id'>
+export type CreateAssetInput = Omit<Asset, 'id' | 'version'>
 
 export type UpdateAssetInput = {
   id: string
-  changes: Partial<Omit<Asset, 'id'>>
+  version: number
+  changes: Partial<CreateAssetInput>
+}
+
+export type DeleteAssetInput = {
+  id: string
+  version: number
 }

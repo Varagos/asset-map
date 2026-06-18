@@ -1,10 +1,17 @@
 import type {
   AssetsRepository,
+  DeleteAssetOptions,
   ListAssetsCriteria,
   PaginatedAssets,
+  SaveAssetOptions,
 } from '../modules/assets/application/ports/assets.repository'
-import type { Asset } from '../modules/assets/domain/asset.entity'
+import { Asset } from '../modules/assets/domain/asset.entity'
+import { AssetVersionConflictError } from '../modules/assets/domain/asset.errors'
 import type { AssetProps } from '../modules/assets/domain/asset.types'
+
+function cloneAsset(asset: Asset): Asset {
+  return Asset.reconstitute(asset.toPrimitives())
+}
 
 function isInsideBBox(
   asset: AssetProps,
@@ -59,7 +66,7 @@ export class FakeAssetsRepository implements AssetsRepository {
   private assets: Asset[]
 
   constructor(seedAssets: Asset[] = []) {
-    this.assets = [...seedAssets]
+    this.assets = seedAssets.map(cloneAsset)
   }
 
   list(criteria: ListAssetsCriteria): Promise<PaginatedAssets> {
@@ -75,10 +82,9 @@ export class FakeAssetsRepository implements AssetsRepository {
     const sortedAssets = sortAssets(filteredAssets, criteria.sort)
 
     return Promise.resolve({
-      items: sortedAssets.slice(
-        criteria.offset,
-        criteria.offset + criteria.limit,
-      ),
+      items: sortedAssets
+        .slice(criteria.offset, criteria.offset + criteria.limit)
+        .map(cloneAsset),
       total: sortedAssets.length,
       limit: criteria.limit,
       offset: criteria.offset,
@@ -86,30 +92,69 @@ export class FakeAssetsRepository implements AssetsRepository {
   }
 
   findById(id: string): Promise<Asset | null> {
-    return Promise.resolve(
-      this.assets.find((asset) => asset.toPrimitives().id === id) ?? null,
-    )
+    const asset = this.assets.find((item) => item.toPrimitives().id === id)
+
+    return Promise.resolve(asset ? cloneAsset(asset) : null)
   }
 
-  save(asset: Asset): Promise<Asset> {
-    const id = asset.toPrimitives().id
+  save(asset: Asset, options?: SaveAssetOptions): Promise<Asset> {
+    const props = asset.toPrimitives()
+    const id = props.id
     const existingIndex = this.assets.findIndex(
       (item) => item.toPrimitives().id === id,
     )
 
     if (existingIndex === -1) {
-      this.assets = [asset, ...this.assets]
-      return Promise.resolve(asset)
+      if (options?.expectedVersion !== undefined) {
+        throw new AssetVersionConflictError(id)
+      }
+
+      const createdAsset = cloneAsset(asset)
+
+      this.assets = [createdAsset, ...this.assets]
+      return Promise.resolve(cloneAsset(createdAsset))
     }
 
+    const existingAsset = this.assets[existingIndex]
+
+    if (!existingAsset) {
+      throw new AssetVersionConflictError(id)
+    }
+
+    const existingVersion = existingAsset.toPrimitives().version
+
+    if (
+      options?.expectedVersion !== undefined &&
+      existingVersion !== options.expectedVersion
+    ) {
+      throw new AssetVersionConflictError(id)
+    }
+
+    const savedAsset = Asset.reconstitute({
+      ...props,
+      version: existingVersion + 1,
+    })
+
     this.assets = this.assets.map((item) =>
-      item.toPrimitives().id === id ? asset : item,
+      item.toPrimitives().id === id ? savedAsset : item,
     )
 
-    return Promise.resolve(asset)
+    return Promise.resolve(cloneAsset(savedAsset))
   }
 
-  deleteById(id: string): Promise<boolean> {
+  deleteById(id: string, options?: DeleteAssetOptions): Promise<boolean> {
+    const existingAsset = this.assets.find(
+      (asset) => asset.toPrimitives().id === id,
+    )
+
+    if (
+      existingAsset &&
+      options?.expectedVersion !== undefined &&
+      existingAsset.toPrimitives().version !== options.expectedVersion
+    ) {
+      return Promise.resolve(false)
+    }
+
     const initialLength = this.assets.length
     this.assets = this.assets.filter((asset) => asset.toPrimitives().id !== id)
 

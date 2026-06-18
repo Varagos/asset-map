@@ -4,6 +4,11 @@ Compact notes on decisions and meaningful changes. Keep entries dated, short, an
 
 ## 2026-06-18
 
+- Chose optimistic concurrency for asset writes instead of serializable transactions because stale browser edits are the main risk.
+- Added TypeORM `@VersionColumn` plus HTTP `ETag`/`If-Match`; version stays server metadata, not an editable form field.
+- Made PATCH and DELETE require `If-Match`; missing preconditions return `428`, stale versions return `412`.
+- Updated asset changes to mutate the loaded domain entity, then persist with an expected-version check.
+- Mirrored migration-owned checks/indexes in TypeORM metadata so `schema:log` stays a useful drift check.
 - Reviewed the asset query indexes against the real list endpoints.
 - Kept the primary key for single-asset reads/writes, GiST on `location` for bbox search, `(type, status)` for combined filters, and `name` for name sorting.
 - Added an append-only migration for production list performance: `(status, name)` for status-only filtering and a status-rank expression index for default severity sorting.

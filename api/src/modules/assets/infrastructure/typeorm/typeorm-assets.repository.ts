@@ -1,10 +1,13 @@
 import { Asset } from '../../domain/asset.entity'
+import { AssetVersionConflictError } from '../../domain/asset.errors'
 import { AssetOrmEntity } from './asset.orm-entity'
 import type { Point, Repository } from 'typeorm'
 import type {
+  DeleteAssetOptions,
   AssetsRepository,
   ListAssetsCriteria,
   PaginatedAssets,
+  SaveAssetOptions,
 } from '../../application/ports/assets.repository'
 import type { AssetProps } from '../../domain/asset.types'
 
@@ -20,6 +23,7 @@ function toOrmEntity(asset: Asset): AssetOrmEntity {
   const row = new AssetOrmEntity()
 
   row.id = props.id
+  row.version = props.version
   row.name = props.name
   row.type = props.type
   row.status = props.status
@@ -31,6 +35,31 @@ function toOrmEntity(asset: Asset): AssetOrmEntity {
   return row
 }
 
+function toOrmUpdateSet(
+  asset: Asset,
+): Pick<
+  AssetOrmEntity,
+  | 'name'
+  | 'type'
+  | 'status'
+  | 'installed_at'
+  | 'last_inspected_at'
+  | 'notes'
+  | 'location'
+> {
+  const props = asset.toPrimitives()
+
+  return {
+    name: props.name,
+    type: props.type,
+    status: props.status,
+    installed_at: props.installed_at,
+    last_inspected_at: props.last_inspected_at,
+    notes: props.notes,
+    location: toPoint(props.lat, props.lng),
+  }
+}
+
 function toDomain(row: AssetOrmEntity): Asset {
   const [lng, lat] = row.location.coordinates
 
@@ -40,6 +69,7 @@ function toDomain(row: AssetOrmEntity): Asset {
 
   const props: AssetProps = {
     id: row.id,
+    version: row.version,
     name: row.name,
     type: row.type,
     status: row.status,
@@ -115,15 +145,45 @@ export class TypeOrmAssetsRepository implements AssetsRepository {
     return row ? toDomain(row) : null
   }
 
-  async save(asset: Asset): Promise<Asset> {
+  async save(asset: Asset, options?: SaveAssetOptions): Promise<Asset> {
+    if (options?.expectedVersion !== undefined) {
+      return this.updateWithExpectedVersion(asset, options.expectedVersion)
+    }
+
     const savedRow = await this.repository.save(toOrmEntity(asset))
 
     return toDomain(savedRow)
   }
 
-  async deleteById(id: string): Promise<boolean> {
-    const result = await this.repository.delete({ id })
+  async deleteById(id: string, options?: DeleteAssetOptions): Promise<boolean> {
+    const result = await this.repository.delete(
+      options?.expectedVersion === undefined
+        ? { id }
+        : { id, version: options.expectedVersion },
+    )
 
     return (result.affected ?? 0) > 0
+  }
+
+  private async updateWithExpectedVersion(
+    asset: Asset,
+    expectedVersion: number,
+  ): Promise<Asset> {
+    const { id } = asset.toPrimitives()
+    const result = await this.repository
+      .createQueryBuilder()
+      .update(AssetOrmEntity)
+      .set(toOrmUpdateSet(asset))
+      .where('id = :id', { id })
+      .andWhere('version = :expectedVersion', { expectedVersion })
+      .execute()
+
+    if ((result.affected ?? 0) === 0) {
+      throw new AssetVersionConflictError(id)
+    }
+
+    const savedRow = await this.repository.findOneByOrFail({ id })
+
+    return toDomain(savedRow)
   }
 }

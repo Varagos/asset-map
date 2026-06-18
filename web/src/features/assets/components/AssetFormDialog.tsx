@@ -83,9 +83,14 @@ export function AssetFormDialog() {
   const onSubmit: SubmitHandler<AssetFormValues> = async (values) => {
     const input = toCreateAssetInput(values)
 
-    if (isEditMode && editingAssetId) {
+    if (isEditMode) {
+      if (!editingAsset) {
+        return
+      }
+
       const updatedAsset = await updateAsset({
-        id: editingAssetId,
+        id: editingAsset.id,
+        version: editingAsset.version,
         changes: input,
       }).unwrap()
 
